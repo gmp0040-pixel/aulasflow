@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AulaFlow — Sistema Inteligente para Professores</title>
+  <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="study-styles.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Sistema inteligente para professores com IA integrada">
+</head>
+<body>
+
+<!-- ======================== AUTH SCREEN ======================== -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">📚</div>
+      <span class="auth-logo-text">AulaFlow</span>
+    </div>
+    <h2 class="auth-title">Bem-vindo de volta</h2>
+    <p class="auth-subtitle">Seu assistente inteligente para aulas</p>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Entrar</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Cadastrar</button>
+    </div>
+
+    <div id="login-form">
+      <div class="form-group">
+        <label class="form-label">E-mail</label>
+        <input type="email" id="login-email" class="form-input" placeholder="seu@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Senha</label>
+        <input type="password" id="login-password" class="form-input" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" onclick="login()">Entrar</button>
+    </div>
+
+    <div id="register-form" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Nome completo</label>
+        <input type="text" id="reg-name" class="form-input" placeholder="Prof. João Silva">
+      </div>
+      <div class="form-group">
+        <label class="form-label">E-mail</label>
+        <input type="email" id="reg-email" class="form-input" placeholder="seu@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Senha</label>
+        <input type="password" id="reg-password" class="form-input" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" onclick="register()">Criar conta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== APP ======================== -->
+<div id="app" style="display:none">
+
+  <!-- Sidebar Overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">📚</div>
+      <span class="sidebar-logo-text">AulaFlow</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Principal</div>
+        <div class="nav-item active" onclick="showPage('dashboard')">
+          <span class="nav-icon">🏠</span>
+          <span class="nav-label">Dashboard</span>
+        </div>
+        <div class="nav-item" onclick="showPage('subjects')">
+          <span class="nav-icon">📚</span>
+          <span class="nav-label">Matérias</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-label">Gestão</div>
+        <div class="nav-item" onclick="showPage('students')">
+          <span class="nav-icon">👨‍🎓</span>
+          <span class="nav-label">Alunos</span>
+        </div>
+        <div class="nav-item" onclick="showPage('grades')">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label">Notas</span>
+        </div>
+        <div class="nav-item" onclick="showPage('calendar')">
+          <span class="nav-icon">📅</span>
+          <span class="nav-label">Calendário</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-label">Relatórios</div>
+        <div class="nav-item" onclick="showPage('reports')">
+          <span class="nav-icon">📈</span>
+          <span class="nav-label">Relatórios</span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info" onclick="logout()">
+        <div class="user-avatar" id="user-avatar">P</div>
+        <span class="user-name" id="user-name">Professor</span>
+        <span class="user-logout">⏻</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+        <div>
+          <div class="topbar-title" id="page-title">Dashboard</div>
+          <div class="topbar-subtitle" id="page-subtitle">Visão geral</div>
+        </div>
+      </div>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- ====== DASHBOARD ====== -->
+      <div class="page active" id="page-dashboard">
+        <div class="stats-grid" id="dashboard-stats"></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">📚 Matérias Recentes</span>
+              <button class="btn btn-sm btn-ghost" onclick="showPage('subjects')">Ver todas →</button>
+            </div>
+            <div class="card-body" id="dashboard-subjects"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">📅 Próximos Eventos</span>
+              <button class="btn btn-sm btn-ghost" onclick="showPage('calendar')">Ver calendário →</button>
+            </div>
+            <div class="card-body" id="dashboard-events"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== SUBJECTS ====== -->
+      <div class="page" id="page-subjects">
+        <div class="subjects-grid" id="subjects-grid"></div>
+      </div>
+
+      <!-- ====== SUBJECT DETAIL ====== -->
+      <div class="page" id="page-subject-detail">
+        <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap" id="subject-detail-actions"></div>
+
+        <!-- Tabs -->
+        <div style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px;overflow-x:auto">
+          <button class="btn btn-sm btn-ghost subject-tab active" data-tab="lessons" onclick="switchSubjectTab('lessons',this)">📖 Aulas</button>
+          <button class="btn btn-sm btn-ghost subject-tab" data-tab="exams" onclick="switchSubjectTab('exams',this)">🧪 Provas</button>
+          <button class="btn btn-sm btn-ghost subject-tab" data-tab="assignments" onclick="switchSubjectTab('assignments',this)">📄 Trabalhos</button>
+          <button class="btn btn-sm btn-ghost subject-tab" data-tab="attendance" onclick="switchSubjectTab('attendance',this)">✅ Chamada</button>
+          <button class="btn btn-sm btn-ghost subject-tab" data-tab="subject-grades" onclick="switchSubjectTab('subject-grades',this)">📊 Notas</button>
+          <button class="btn btn-sm btn-ghost subject-tab" data-tab="subject-students" onclick="switchSubjectTab('subject-students',this)">👥 Alunos</button>
+        </div>
+
+        <div id="subject-tab-content"></div>
+      </div>
+
+      <!-- ====== LESSON EDITOR ====== -->
+      <div class="page" id="page-lesson-editor">
+        <div id="lesson-editor-content"></div>
+      </div>
+
+      <!-- ====== STUDENTS ====== -->
+      <div class="page" id="page-students">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">👨‍🎓 Todos os Alunos</span>
+            <button class="btn btn-sm btn-primary" onclick="openModal('add-student-modal')">+ Novo Aluno</button>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div id="students-table"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== GRADES ====== -->
+      <div class="page" id="page-grades">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📊 Notas por Matéria</span>
+            <select class="form-select" style="width:auto" id="grades-subject-select" onchange="loadGradesPage()">
+              <option value="">Selecione uma matéria...</option>
+            </select>
+          </div>
+          <div class="card-body" id="grades-content">
+            <div class="empty-state">
+              <div class="empty-state-icon">📊</div>
+              <div class="empty-state-title">Selecione uma matéria</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== CALENDAR ====== -->
+      <div class="page" id="page-calendar">
+        <div class="card">
+          <div class="card-header">
+            <div style="display:flex;align-items:center;gap:12px">
+              <button class="btn btn-sm btn-ghost" onclick="changeMonth(-1)">‹</button>
+              <span class="card-title" id="calendar-title">Abril 2024</span>
+              <button class="btn btn-sm btn-ghost" onclick="changeMonth(1)">›</button>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="openModal('add-event-modal')">+ Evento</button>
+          </div>
+          <div class="card-body">
+            <div id="calendar-grid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== REPORTS ====== -->
+      <div class="page" id="page-reports">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center">
+          <select class="form-select" style="width:auto" id="report-subject-select" onchange="loadReports()">
+            <option value="">Selecione uma matéria...</option>
+          </select>
+          <button class="btn btn-sm btn-secondary" onclick="exportReportPDF()">📄 Exportar PDF</button>
+        </div>
+        <div class="grid-2" id="reports-content">
+          <div class="empty-state" style="grid-column:1/-1">
+            <div class="empty-state-icon">📈</div>
+            <div class="empty-state-title">Selecione uma matéria</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- page-content -->
+  </main>
+</div><!-- app -->
+
+<!-- ======================== PRESENTATION MODE ======================== -->
+<div id="presentation-mode">
+  <div style="display:flex;flex:1;overflow:hidden">
+    <div class="presentation-main" id="presentation-main">
+      <div class="slide-display" id="slide-display"></div>
+    </div>
+    <div class="presentation-notes-panel" id="notes-panel">
+      <div class="presentation-notes-title">🗒 Anotações do Professor</div>
+      <div class="presentation-notes-content" id="notes-content"></div>
+    </div>
+  </div>
+  <div class="presentation-controls">
+    <button class="btn btn-sm btn-ghost" onclick="toggleNotes()" title="Anotações">📝</button>
+    <button class="btn btn-sm btn-ghost" onclick="prevSlide()">‹ Anterior</button>
+    <div class="slide-counter" id="slide-counter">1 / 10</div>
+    <div class="presentation-progress">
+      <div class="presentation-progress-bar" id="progress-bar"></div>
+    </div>
+    <button class="btn btn-sm btn-ghost" onclick="nextSlide()">Próximo ›</button>
+    <button class="btn btn-sm btn-danger" onclick="exitPresentation()">✕ Sair</button>
+  </div>
+</div>
+
+<!-- ======================== MODALS ======================== -->
+
+<!-- Add Subject Modal -->
+<div class="modal-overlay" id="add-subject-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">📚 Nova Matéria</h3>
+      <button class="modal-close" onclick="closeModal('add-subject-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nome da Matéria *</label>
+        <input type="text" id="subject-name" class="form-input" placeholder="Ex: Matemática">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <textarea id="subject-desc" class="form-textarea" placeholder="Breve descrição..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cor</label>
+        <div class="color-options" id="color-picker">
+          <div class="color-opt selected" style="background:#6366f1" data-color="#6366f1" onclick="selectColor(this)"></div>
+          <div class="color-opt" style="background:#10b981" data-color="#10b981" onclick="selectColor(this)"></div>
+          <div class="color-opt" style="background:#f59e0b" data-color="#f59e0b" onclick="selectColor(this)"></div>
+          <div class="color-opt" style="background:#f43f5e" data-color="#f43f5e" onclick="selectColor(this)"></div>
+          <div class="color-opt" style="background:#06b6d4" data-color="#06b6d4" onclick="selectColor(this)"></div>
+          <div class="color-opt" style="background:#a855f7" data-color="#a855f7" onclick="selectColor(this)"></div>
+          <div class="color-opt" style="background:#ec4899" data-color="#ec4899" onclick="selectColor(this)"></div>
+          <div class="color-opt" style="background:#84cc16" data-color="#84cc16" onclick="selectColor(this)"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('add-subject-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createSubject()">Criar Matéria</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Lesson Modal -->
+<div class="modal-overlay" id="add-lesson-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">📖 Nova Aula</h3>
+      <button class="modal-close" onclick="closeModal('add-lesson-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Título da Aula *</label>
+        <input type="text" id="lesson-title" class="form-input" placeholder="Ex: Funções do 1º Grau">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('add-lesson-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createLesson()">Criar e Abrir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Student Modal -->
+<div class="modal-overlay" id="add-student-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">👨‍🎓 Novo Aluno</h3>
+      <button class="modal-close" onclick="closeModal('add-student-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nome *</label>
+        <input type="text" id="student-name" class="form-input" placeholder="Nome completo">
+      </div>
+      <div class="form-group">
+        <label class="form-label">E-mail</label>
+        <input type="email" id="student-email" class="form-input" placeholder="aluno@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Matrícula</label>
+        <input type="text" id="student-registration" class="form-input" placeholder="Ex: 2024001">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('add-student-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createStudent()">Cadastrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Event Modal -->
+<div class="modal-overlay" id="add-event-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">📅 Novo Evento</h3>
+      <button class="modal-close" onclick="closeModal('add-event-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Título *</label>
+        <input type="text" id="event-title" class="form-input" placeholder="Ex: Prova de Matemática">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data *</label>
+        <input type="date" id="event-date" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select id="event-type" class="form-select">
+          <option value="exam">🧪 Prova</option>
+          <option value="assignment">📄 Trabalho</option>
+          <option value="event">📅 Evento</option>
+          <option value="holiday">🎉 Feriado</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <textarea id="event-desc" class="form-textarea" placeholder="Descrição..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('add-event-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createEvent()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Exam Generator Modal -->
+<div class="modal-overlay" id="exam-modal">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <h3 class="modal-title">🧪 Gerar Prova com IA</h3>
+      <button class="modal-close" onclick="closeModal('exam-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+        <div class="form-group mb-0">
+          <label class="form-label">Nº de Questões</label>
+          <select id="exam-count" class="form-select">
+            <option value="5">5 questões</option>
+            <option value="10" selected>10 questões</option>
+            <option value="15">15 questões</option>
+            <option value="20">20 questões</option>
+          </select>
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">Tipo</label>
+          <select id="exam-type" class="form-select">
+            <option value="multiple">Múltipla Escolha</option>
+            <option value="essay">Dissertativa</option>
+            <option value="truefalse">Verdadeiro/Falso</option>
+          </select>
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">Dificuldade</label>
+          <select id="exam-difficulty" class="form-select">
+            <option value="easy">Fácil</option>
+            <option value="medium" selected>Médio</option>
+            <option value="hard">Difícil</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary w-full" id="gen-exam-btn" onclick="generateExam()">🤖 Gerar Prova com IA</button>
+      <div id="exam-preview" style="margin-top:16px"></div>
+    </div>
+    <div class="modal-footer" id="exam-modal-footer" style="display:none">
+      <button class="btn btn-ghost" onclick="generateExam()">🔁 Gerar Novamente</button>
+      <button class="btn btn-secondary" onclick="exportExamPDF()">📄 Exportar PDF</button>
+      <button class="btn btn-primary" onclick="saveExam()">💾 Salvar Prova</button>
+    </div>
+  </div>
+</div>
+
+<!-- Assignment Generator Modal -->
+<div class="modal-overlay" id="assignment-modal">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <h3 class="modal-title">📄 Gerar Trabalho com IA</h3>
+      <button class="modal-close" onclick="closeModal('assignment-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <button class="btn btn-primary w-full" id="gen-assignment-btn" onclick="generateAssignment()">🤖 Gerar Ideias de Trabalhos</button>
+      <div id="assignment-preview" style="margin-top:16px"></div>
+    </div>
+    <div class="modal-footer" id="assignment-modal-footer" style="display:none">
+      <button class="btn btn-ghost" onclick="generateAssignment()">🔁 Novas Ideias</button>
+      <button class="btn btn-primary" onclick="saveAssignment()">💾 Salvar Trabalho Selecionado</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Grade Modal -->
+<div class="modal-overlay" id="add-grade-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">📊 Lançar Nota</h3>
+      <button class="modal-close" onclick="closeModal('add-grade-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Aluno</label>
+        <select id="grade-student" class="form-select"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Atividade</label>
+        <input type="text" id="grade-activity" class="form-input" placeholder="Ex: Prova 1, Trabalho...">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group mb-0">
+          <label class="form-label">Nota</label>
+          <input type="number" id="grade-value" class="form-input" min="0" max="10" step="0.1" placeholder="0.0">
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">Nota Máxima</label>
+          <input type="number" id="grade-max" class="form-input" value="10" min="1">
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:12px">
+        <label class="form-label">Data</label>
+        <input type="date" id="grade-date" class="form-input">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('add-grade-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveGrade()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script src="script.js"></script>
+<script src="study-addon.js"></script>
+</body>
+</html>
