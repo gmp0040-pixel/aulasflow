@@ -173,35 +173,35 @@ async function dbGet(table, filters = {}) {
   let q = sb.from(table).select('*').eq('user_id', currentUser.id);
   Object.entries(filters).forEach(([k, v]) => { q = q.eq(k, v); });
   const { data, error } = await q.order('created_at', { ascending: false });
-  if (error) throw new Error(error.message);
+  if (error) { console.error('dbGet error:', table, error.message); return []; }
   return data || [];
 }
 
 async function dbGetOne(table, id) {
   const sb = getSupabase();
-  const { data, error } = await sb.from(table).select('*').eq('id', id).single();
-  if (error) throw new Error(error.message);
+  const { data, error } = await sb.from(table).select('*').eq('id', id).maybeSingle();
+  if (error) { console.error('dbGetOne error:', table, error.message); throw new Error(error.message); }
   return data;
 }
 
 async function dbInsert(table, obj) {
   const sb = getSupabase();
-  const { data, error } = await sb.from(table).insert({ ...obj, user_id: currentUser.id }).select().single();
-  if (error) throw new Error(error.message);
-  return data;
+  const { data, error } = await sb.from(table).insert({ ...obj, user_id: currentUser.id }).select();
+  if (error) { console.error('dbInsert error:', table, error.message); throw new Error(error.message); }
+  return data?.[0] || null;
 }
 
 async function dbUpdate(table, id, obj) {
   const sb = getSupabase();
-  const { data, error } = await sb.from(table).update(obj).eq('id', id).select().single();
-  if (error) throw new Error(error.message);
-  return data;
+  const { data, error } = await sb.from(table).update(obj).eq('id', id).select();
+  if (error) { console.error('dbUpdate error:', table, error.message); throw new Error(error.message); }
+  return data?.[0] || null;
 }
 
 async function dbDelete(table, id) {
   const sb = getSupabase();
   const { error } = await sb.from(table).delete().eq('id', id);
-  if (error) throw new Error(error.message);
+  if (error) { console.error('dbDelete error:', table, error.message); throw new Error(error.message); }
 }
 
 // ========================
