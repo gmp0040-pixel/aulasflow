@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AulaFlow — Sistema Inteligente para Professores</title>
   <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="study-styles.css">
+  <link rel="stylesheet" href="study-styles.css">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#6366f1">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -32,11 +32,12 @@
     <div id="login-form">
       <div class="form-group">
         <label class="form-label">E-mail</label>
-        <input type="email" id="login-email" class="form-input" placeholder="seu@email.com">
+        <input type="email" id="login-email" class="form-input" placeholder="seu@email.com" autocomplete="email">
       </div>
       <div class="form-group">
         <label class="form-label">Senha</label>
-        <input type="password" id="login-password" class="form-input" placeholder="••••••••">
+        <input type="password" id="login-password" class="form-input" placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter') login()">
       </div>
       <button class="btn btn-primary btn-full btn-lg" onclick="login()">Entrar</button>
     </div>
@@ -44,15 +45,16 @@
     <div id="register-form" style="display:none">
       <div class="form-group">
         <label class="form-label">Nome completo</label>
-        <input type="text" id="reg-name" class="form-input" placeholder="Prof. João Silva">
+        <input type="text" id="reg-name" class="form-input" placeholder="Prof. João Silva" autocomplete="name">
       </div>
       <div class="form-group">
         <label class="form-label">E-mail</label>
-        <input type="email" id="reg-email" class="form-input" placeholder="seu@email.com">
+        <input type="email" id="reg-email" class="form-input" placeholder="seu@email.com" autocomplete="email">
       </div>
       <div class="form-group">
-        <label class="form-label">Senha</label>
-        <input type="password" id="reg-password" class="form-input" placeholder="••••••••">
+        <label class="form-label">Senha (mínimo 6 caracteres)</label>
+        <input type="password" id="reg-password" class="form-input" placeholder="••••••••" autocomplete="new-password"
+          onkeydown="if(event.key==='Enter') register()">
       </div>
       <button class="btn btn-primary btn-full btn-lg" onclick="register()">Criar conta</button>
     </div>
@@ -199,16 +201,16 @@
       <div class="page" id="page-grades">
         <div class="card">
           <div class="card-header">
-            <span class="card-title">📊 Notas por Matéria</span>
-            <select class="form-select" style="width:auto" id="grades-subject-select" onchange="loadGradesPage()">
-              <option value="">Selecione uma matéria...</option>
-            </select>
+            <span class="card-title">📊 Notas</span>
           </div>
-          <div class="card-body" id="grades-content">
-            <div class="empty-state">
-              <div class="empty-state-icon">📊</div>
-              <div class="empty-state-title">Selecione uma matéria</div>
+          <div class="card-body">
+            <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+              <select class="form-select" style="width:auto;flex:1;min-width:200px" id="grades-subject-select" onchange="loadGrades()">
+                <option value="">Selecione uma matéria...</option>
+              </select>
+              <button class="btn btn-sm btn-primary" onclick="openGradeModal()">+ Lançar Nota</button>
             </div>
+            <div id="grades-table"></div>
           </div>
         </div>
       </div>
@@ -217,10 +219,10 @@
       <div class="page" id="page-calendar">
         <div class="card">
           <div class="card-header">
-            <div style="display:flex;align-items:center;gap:12px">
-              <button class="btn btn-sm btn-ghost" onclick="changeMonth(-1)">‹</button>
-              <span class="card-title" id="calendar-title">Abril 2024</span>
-              <button class="btn btn-sm btn-ghost" onclick="changeMonth(1)">›</button>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="btn btn-sm btn-ghost" onclick="changeMonth(-1)">←</button>
+              <span class="card-title" id="calendar-title">Calendário</span>
+              <button class="btn btn-sm btn-ghost" onclick="changeMonth(1)">→</button>
             </div>
             <button class="btn btn-sm btn-primary" onclick="openModal('add-event-modal')">+ Evento</button>
           </div>
@@ -232,45 +234,43 @@
 
       <!-- ====== REPORTS ====== -->
       <div class="page" id="page-reports">
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center">
-          <select class="form-select" style="width:auto" id="report-subject-select" onchange="loadReports()">
-            <option value="">Selecione uma matéria...</option>
-          </select>
-          <button class="btn btn-sm btn-secondary" onclick="exportReportPDF()">📄 Exportar PDF</button>
-        </div>
-        <div class="grid-2" id="reports-content">
-          <div class="empty-state" style="grid-column:1/-1">
-            <div class="empty-state-icon">📈</div>
-            <div class="empty-state-title">Selecione uma matéria</div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-body">
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+              <select class="form-select" style="flex:1;min-width:200px" id="report-subject-select" onchange="loadReports()">
+                <option value="">Selecione uma matéria...</option>
+              </select>
+              <button class="btn btn-sm btn-secondary" onclick="exportReportPDF()">📄 Exportar PDF</button>
+            </div>
           </div>
         </div>
+        <div id="reports-content"></div>
       </div>
 
-    </div><!-- page-content -->
+    </div>
   </main>
-</div><!-- app -->
 
-<!-- ======================== PRESENTATION MODE ======================== -->
-<div id="presentation-mode">
-  <div style="display:flex;flex:1;overflow:hidden">
-    <div class="presentation-main" id="presentation-main">
-      <div class="slide-display" id="slide-display"></div>
-    </div>
-    <div class="presentation-notes-panel" id="notes-panel">
-      <div class="presentation-notes-title">🗒 Anotações do Professor</div>
-      <div class="presentation-notes-content" id="notes-content"></div>
+  <!-- Presentation Mode -->
+  <div class="presentation-mode" id="presentation-mode">
+    <div class="presentation-layout">
+      <div class="presentation-main">
+        <div class="slide-display" id="slide-display"></div>
+        <div class="presentation-controls">
+          <button class="btn btn-secondary" onclick="prevSlide()">← Anterior</button>
+          <span class="slide-counter" id="slide-counter">1 / 1</span>
+          <div class="presentation-progress"><div class="presentation-progress-bar" id="progress-bar"></div></div>
+          <button class="btn btn-primary" onclick="nextSlide()">Próximo →</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleNotes()">📝 Notas</button>
+          <button class="btn btn-danger btn-sm" onclick="exitPresentation()">✕ Sair</button>
+        </div>
+      </div>
+      <div class="presentation-notes-panel" id="notes-panel">
+        <div style="font-weight:600;margin-bottom:8px;font-size:14px">📝 Anotações</div>
+        <div id="notes-content" style="font-size:13px;line-height:1.7;color:var(--text2);white-space:pre-wrap"></div>
+      </div>
     </div>
   </div>
-  <div class="presentation-controls">
-    <button class="btn btn-sm btn-ghost" onclick="toggleNotes()" title="Anotações">📝</button>
-    <button class="btn btn-sm btn-ghost" onclick="prevSlide()">‹ Anterior</button>
-    <div class="slide-counter" id="slide-counter">1 / 10</div>
-    <div class="presentation-progress">
-      <div class="presentation-progress-bar" id="progress-bar"></div>
-    </div>
-    <button class="btn btn-sm btn-ghost" onclick="nextSlide()">Próximo ›</button>
-    <button class="btn btn-sm btn-danger" onclick="exitPresentation()">✕ Sair</button>
-  </div>
+
 </div>
 
 <!-- ======================== MODALS ======================== -->
@@ -284,24 +284,24 @@
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label class="form-label">Nome da Matéria *</label>
+        <label class="form-label">Nome *</label>
         <input type="text" id="subject-name" class="form-input" placeholder="Ex: Matemática">
       </div>
       <div class="form-group">
         <label class="form-label">Descrição</label>
-        <textarea id="subject-desc" class="form-textarea" placeholder="Breve descrição..."></textarea>
+        <input type="text" id="subject-desc" class="form-input" placeholder="Descrição opcional">
       </div>
       <div class="form-group">
         <label class="form-label">Cor</label>
-        <div class="color-options" id="color-picker">
-          <div class="color-opt selected" style="background:#6366f1" data-color="#6366f1" onclick="selectColor(this)"></div>
-          <div class="color-opt" style="background:#10b981" data-color="#10b981" onclick="selectColor(this)"></div>
-          <div class="color-opt" style="background:#f59e0b" data-color="#f59e0b" onclick="selectColor(this)"></div>
-          <div class="color-opt" style="background:#f43f5e" data-color="#f43f5e" onclick="selectColor(this)"></div>
-          <div class="color-opt" style="background:#06b6d4" data-color="#06b6d4" onclick="selectColor(this)"></div>
-          <div class="color-opt" style="background:#a855f7" data-color="#a855f7" onclick="selectColor(this)"></div>
-          <div class="color-opt" style="background:#ec4899" data-color="#ec4899" onclick="selectColor(this)"></div>
-          <div class="color-opt" style="background:#84cc16" data-color="#84cc16" onclick="selectColor(this)"></div>
+        <div class="color-options">
+          <div class="color-opt selected" data-color="#6366f1" style="background:#6366f1" onclick="selectColor(this)"></div>
+          <div class="color-opt" data-color="#10b981" style="background:#10b981" onclick="selectColor(this)"></div>
+          <div class="color-opt" data-color="#f59e0b" style="background:#f59e0b" onclick="selectColor(this)"></div>
+          <div class="color-opt" data-color="#ef4444" style="background:#ef4444" onclick="selectColor(this)"></div>
+          <div class="color-opt" data-color="#06b6d4" style="background:#06b6d4" onclick="selectColor(this)"></div>
+          <div class="color-opt" data-color="#a855f7" style="background:#a855f7" onclick="selectColor(this)"></div>
+          <div class="color-opt" data-color="#ec4899" style="background:#ec4899" onclick="selectColor(this)"></div>
+          <div class="color-opt" data-color="#f97316" style="background:#f97316" onclick="selectColor(this)"></div>
         </div>
       </div>
     </div>
@@ -322,7 +322,8 @@
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label">Título da Aula *</label>
-        <input type="text" id="lesson-title" class="form-input" placeholder="Ex: Funções do 1º Grau">
+        <input type="text" id="lesson-title" class="form-input" placeholder="Ex: Funções do 1º Grau"
+          onkeydown="if(event.key==='Enter') createLesson()">
       </div>
     </div>
     <div class="modal-footer">
@@ -502,13 +503,16 @@
 <!-- Toast Container -->
 <div id="toast-container"></div>
 
-
+<!-- ======================== SCRIPTS ======================== -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
- const SUPABASE_URL = 'https://yszhmntovridgeuwaybm.supabase.co'; 
-  const SUPABASE_KEY = sb_publishable_QDcmVpGvE-KkE4NU4qPWgw_Zhhi-st4;
-  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // ⚠️ SUBSTITUA pelas suas credenciais do Supabase
+  const SUPABASE_URL = 'https://yszhmntovridgeuwaybm.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_QDcmVpGvE-KkE4NU4qPWgw_Zhhi-st4'; // ← coloque sua chave ENTRE ASPAS
+
+  // Cria o cliente Supabase e disponibiliza globalmente
+  window._supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 </script>
 
 <script src="script.js"></script>
