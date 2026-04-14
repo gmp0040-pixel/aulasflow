@@ -88,11 +88,22 @@ async function login() {
   
   try {
     const sb = getSupabase();
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) throw new Error(error.message);
+    if (!sb) throw new Error('Supabase não carregado. Recarregue a página.');
     
-    const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
-    currentUser = { id: data.user.id, name: profile?.name || email, email };
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) {
+      if (error.message.includes('Invalid login')) throw new Error('E-mail ou senha incorretos');
+      if (error.message.includes('Email not confirmed')) throw new Error('Confirme seu e-mail antes de entrar');
+      throw new Error(error.message);
+    }
+    
+    let userName = email;
+    try {
+      const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
+      if (profile?.name) userName = profile.name;
+    } catch {}
+    
+    currentUser = { id: data.user.id, name: userName, email };
     showApp();
   } catch (err) {
     toast(err.message || 'Erro ao entrar', 'error');
@@ -113,11 +124,19 @@ async function register() {
   
   try {
     const sb = getSupabase();
+    if (!sb) throw new Error('Supabase não carregado. Recarregue a página.');
+
     const { data, error } = await sb.auth.signUp({ email, password });
-    if (error) throw new Error(error.message);
-    
-    // Save profile
-    await sb.from('profiles').upsert({ id: data.user.id, name, email });
+    if (error) {
+      if (error.message.includes('already registered')) throw new Error('Este e-mail já está cadastrado. Use Entrar.');
+      throw new Error(error.message);
+    }
+    if (!data.user) throw new Error('Erro ao criar conta. Tente novamente.');
+
+    try {
+      await sb.from('profiles').upsert({ id: data.user.id, name, email });
+    } catch {}
+
     currentUser = { id: data.user.id, name, email };
     showApp();
     toast('Conta criada! Bem-vindo(a), ' + name, 'success');

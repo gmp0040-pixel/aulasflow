@@ -507,12 +507,20 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-  // ⚠️ SUBSTITUA pelas suas credenciais do Supabase
   const SUPABASE_URL = 'https://yszhmntovridgeuwaybm.supabase.co';
-  const SUPABASE_KEY = 'sb_publishable_QDcmVpGvE-KkE4NU4qPWgw_Zhhi-st4'; // ← coloque sua chave ENTRE ASPAS
+  const SUPABASE_KEY = 'sb_publishable_QDcmVpGvE-KkE4NU4qPWgw_Zhhi-st4';
 
-  // Cria o cliente Supabase e disponibiliza globalmente
-  window._supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  try {
+    window._supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false
+      }
+    });
+  } catch(e) {
+    console.error('Erro Supabase:', e);
+  }
 </script>
 
 <script src="script.js"></script>
