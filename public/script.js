@@ -27,20 +27,19 @@ function getSupabase() {
 // ========================
 // CLAUDE AI HELPER
 // ========================
-async function claudeAI(prompt, systemPrompt) {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+async function claudeAI(prompt, systemPrompt, max_tokens) {
+  const response = await fetch('/.netlify/functions/claude-ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4000,
-      system: systemPrompt || "Você é um assistente educacional especializado em criar conteúdo pedagógico de alta qualidade em português brasileiro. Seja detalhado, preciso e didático.",
-      messages: [{ role: "user", content: prompt }]
+      prompt,
+      system: systemPrompt || 'Você é um assistente educacional especializado em criar conteúdo pedagógico de alta qualidade em português brasileiro. Seja detalhado, preciso e didático.',
+      max_tokens: max_tokens || 4000
     })
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error?.message || 'Erro na IA');
-  return data.content[0].text;
+  if (!response.ok) throw new Error(data.error || 'Erro na IA');
+  return data.content;
 }
 
 async function claudeJSON(prompt, systemPrompt) {
