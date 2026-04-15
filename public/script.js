@@ -481,8 +481,7 @@ async function loadLessonsTab(container) {
             <span class="badge ${l.status === 'saved' ? 'badge-green' : 'badge-yellow'}">${l.status === 'saved' ? '✓ Salva' : 'Rascunho'}</span>
             <div class="lesson-meta">${formatDate(l.created_at)}</div>
             <div class="lesson-actions" onclick="event.stopPropagation()">
-              <button class="btn btn-sm btn-ghost" onclick="openStudyScreen('${l.id}', '${escHtml(l.title)}')">🎓 Estudar</button>
-              <button class="btn btn-sm btn-primary" onclick="openLesson('${l.id}', '${escHtml(l.title)}', ${JSON.stringify(l).replace(/"/g, '&quot;')})">✏️ Editar</button>
+<button class="btn btn-sm btn-primary" onclick="openLesson('${l.id}', '${escHtml(l.title)}', ${JSON.stringify(l).replace(/"/g, '&quot;')})">✏️ Editar</button>
               <button class="btn btn-sm btn-danger btn-icon" onclick="deleteLesson('${l.id}')">🗑</button>
             </div>
           </div>
@@ -782,33 +781,34 @@ function renderLessonEditor() {
   const data = currentLessonData;
   const isSaved = data.status === 'saved';
   
+  // 5-step workflow: Pesquisa → Estrutura → Slides → Anotações → Salvar
   let activeStep = 1;
   if (data.research) activeStep = 2;
   if (data.structure) activeStep = 3;
   if (data.slides) activeStep = 4;
   if (data.notes) activeStep = 5;
-  if (isSaved) activeStep = 6;
+  if (isSaved) activeStep = 5; // stays on 5 (saved state)
   
   const steps = [
-    { num: 1, label: 'Pesquisa', icon: '🔍', unlocked: true },
-    { num: 2, label: 'Estrutura', icon: '📋', unlocked: !!data.research },
-    { num: 3, label: 'Conteúdo', icon: '📝', unlocked: !!data.structure },
-    { num: 4, label: 'Slides', icon: '🎞️', unlocked: !!data.research },
-    { num: 5, label: 'Anotações', icon: '🗒️', unlocked: !!data.slides },
-    { num: 6, label: 'Salvar', icon: '💾', unlocked: !!data.notes },
+    { num: 1, label: 'Pesquisa',   icon: '🔍', unlocked: true },
+    { num: 2, label: 'Estrutura',  icon: '📋', unlocked: !!data.research },
+    { num: 3, label: 'Slides',     icon: '🎞️', unlocked: !!data.structure },
+    { num: 4, label: 'Anotações',  icon: '🗒️', unlocked: !!data.slides },
+    { num: 5, label: 'Salvar',     icon: '💾', unlocked: !!data.notes },
   ];
   
   const stepsHtml = steps.map(s => {
-    const isDone = s.num < activeStep;
-    const isActive = s.num === activeStep;
+    const isDone = isSaved ? true : s.num < activeStep;
+    const isActive = !isSaved && s.num === activeStep;
+    const isGreen = isDone || (isSaved && s.num <= 5);
     const isLocked = !s.unlocked && !isDone;
     return `
-    <div class="ai-step ${isDone ? 'completed' : isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}"
+    <div class="ai-step ${isGreen ? 'completed' : isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}"
          onclick="${s.unlocked || isDone ? 'renderLessonStep(' + s.num + ')' : ''}"
          style="cursor:${s.unlocked || isDone ? 'pointer' : 'not-allowed'};opacity:${isLocked ? '0.4' : '1'}"
          title="${isLocked ? 'Complete a etapa anterior primeiro' : s.label}">
-      <div class="ai-step-num">${isDone ? '✓' : isLocked ? '🔒' : s.icon}</div>
-      <span>${s.label}</span>
+      <div class="ai-step-num" style="${isGreen ? 'background:var(--green);color:white' : ''}">${isGreen ? '✓' : isLocked ? '🔒' : s.icon}</div>
+      <span style="${isGreen ? 'color:var(--green)' : ''}">${s.label}</span>
     </div>`;
   }).join('');
   
@@ -821,7 +821,6 @@ function renderLessonEditor() {
     </div>
     
     <div class="ai-steps">${stepsHtml}</div>
-    <button class="btn-study" onclick="openStudyScreen('${currentLessonId}', '${escHtml(data.title || '')}')">🎓 Modo Estudo</button>
     
     <div class="card">
       <div class="card-body" id="lesson-step-content"></div>
@@ -835,38 +834,39 @@ function renderLessonStep(step) {
   const data = currentLessonData;
   const container = document.getElementById('lesson-step-content');
   
-  if (step === 1 || !data.research) {
+  // STEP 1 — PESQUISA
+  if (step === 1) {
     container.innerHTML = `
-      <h3 style="font-family:Syne,sans-serif;margin-bottom:16px">🔍 Pesquisa Completa</h3>
-      <p style="color:var(--text2);font-size:14px;margin-bottom:16px">A IA irá pesquisar e gerar o conteúdo completo sobre o tópico.</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <h3 style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:700">🔍 Pesquisa Completa</h3>
+        <button class="btn btn-sm btn-ghost" onclick="showPage('subject-detail')">✕ Cancelar e Voltar</button>
+      </div>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:16px">A IA pesquisa e gera conteúdo completo sobre o tema da aula.</p>
       <div id="research-content" class="ai-content-area" style="display:${data.research ? 'block' : 'none'}">${markdownToHtml(data.research || '')}</div>
       <div id="research-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Pesquisando com IA...</span></div>
-      <div class="ai-action-bar" style="margin-top:12px">
-        <button class="btn btn-primary" id="research-btn" onclick="aiResearch()">🤖 Pesquisar com IA</button>
+      <div class="ai-action-bar" style="margin-top:16px">
+        <button class="btn btn-primary" id="research-btn" onclick="aiResearch()">🤖 ${data.research ? 'Pesquisar Novamente' : 'Pesquisar com IA'}</button>
         ${data.research ? '<button class="btn btn-secondary" id="expand-btn" onclick="expandResearch()">📈 Expandir +20%</button>' : ''}
-        ${data.research ? '<button class="btn btn-success" onclick="renderLessonStep(2)">Próximo: Estruturar →</button>' : ''}
+        ${data.research ? '<button class="btn btn-success" onclick="saveStepAndAdvance(1)">💾 Salvar e Avançar →</button>' : ''}
       </div>`;
+  
+  // STEP 2 — ESTRUTURA
   } else if (step === 2) {
     container.innerHTML = `
-      <h3 style="font-family:Syne,sans-serif;margin-bottom:16px">📋 Estrutura da Aula</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <h3 style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:700">📋 Estrutura da Aula</h3>
+        <button class="btn btn-sm btn-ghost" onclick="showPage('subject-detail')">✕ Cancelar e Voltar</button>
+      </div>
       <div id="structure-content" class="ai-content-area" style="display:${data.structure ? 'block' : 'none'}">${markdownToHtml(data.structure || '')}</div>
       <div id="structure-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Estruturando...</span></div>
-      <div class="ai-action-bar" style="margin-top:12px">
-        <button class="btn btn-ghost" onclick="renderLessonStep(1)">← Pesquisa</button>
+      <div class="ai-action-bar" style="margin-top:16px">
+        <button class="btn btn-ghost" onclick="renderLessonStep(1)">← Voltar</button>
         <button class="btn btn-primary" onclick="aiStructure()">🤖 ${data.structure ? 'Reestruturar' : 'Estruturar com IA'}</button>
-        ${data.structure ? '<button class="btn btn-success" onclick="renderLessonStep(3)">Próximo: Conteúdo →</button>' : ''}
+        ${data.structure ? '<button class="btn btn-success" onclick="saveStepAndAdvance(2)">💾 Salvar e Avançar →</button>' : ''}
       </div>`;
+  
+  // STEP 3 — SLIDES
   } else if (step === 3) {
-    container.innerHTML = `
-      <h3 style="font-family:Syne,sans-serif;margin-bottom:16px">📝 Ajustar Conteúdo</h3>
-      <textarea id="content-editor" class="form-textarea" style="min-height:300px;font-size:13px">${data.research || ''}</textarea>
-      <div class="ai-action-bar" style="margin-top:12px">
-        <button class="btn btn-ghost" onclick="renderLessonStep(2)">← Estrutura</button>
-        <button class="btn btn-secondary" onclick="adjustContent('expand')">+ Expandir</button>
-        <button class="btn btn-secondary" onclick="adjustContent('reduce')">- Reduzir</button>
-        <button class="btn btn-success" onclick="saveContentEdits()">Salvar e Continuar →</button>
-      </div>`;
-  } else if (step === 4) {
     let slidesPreview = '';
     if (data.slides) {
       try {
@@ -876,47 +876,69 @@ function renderLessonStep(step) {
             <div class="slide-num">${i + 1}</div>
             <div class="slide-content-preview">
               <div class="slide-title-preview">${escHtml(s.title)}</div>
-              <div class="slide-points-preview">${(s.content || []).slice(0,2).map(p => '• ' + p).join(' ')}</div>
+              <div class="slide-points-preview">${(s.points || []).slice(0,2).map(p => '• ' + p).join(' ')}</div>
             </div>
           </div>`).join('')}</div></div>`;
       } catch {}
     }
-    
     container.innerHTML = `
-      <h3 style="font-family:Syne,sans-serif;margin-bottom:16px">🎞 Slides</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <h3 style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:700">🎞️ Slides da Aula</h3>
+        <button class="btn btn-sm btn-ghost" onclick="showPage('subject-detail')">✕ Cancelar e Voltar</button>
+      </div>
       <div id="slides-preview">${slidesPreview}</div>
-      <div id="slides-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Criando slides detalhados...</span></div>
-      <div class="ai-action-bar" style="margin-top:12px">
-        <button class="btn btn-ghost" onclick="renderLessonStep(3)">← Conteúdo</button>
+      <div id="slides-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Criando slides completos...</span></div>
+      <div class="ai-action-bar" style="margin-top:16px">
+        <button class="btn btn-ghost" onclick="renderLessonStep(2)">← Voltar</button>
         <button class="btn btn-primary" onclick="aiSlides()">🤖 ${data.slides ? 'Regerar Slides' : 'Criar Slides com IA'}</button>
-        ${data.slides ? '<button class="btn btn-success" onclick="renderLessonStep(5)">Próximo: Anotações →</button>' : ''}
+        ${data.slides ? '<button class="btn btn-success" onclick="saveStepAndAdvance(3)">💾 Salvar e Avançar →</button>' : ''}
       </div>`;
-  } else if (step === 5) {
-    container.innerHTML = `
-      <h3 style="font-family:Syne,sans-serif;margin-bottom:16px">🗒 Anotações do Professor</h3>
-      <div id="notes-preview" class="ai-content-area" style="display:${data.notes ? 'block' : 'none'}">${markdownToHtml(data.notes || '')}</div>
-      <div id="notes-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Gerando anotações...</span></div>
-      <div class="ai-action-bar" style="margin-top:12px">
-        <button class="btn btn-ghost" onclick="renderLessonStep(4)">← Slides</button>
-        <button class="btn btn-secondary" onclick="aiNotes('summary')">📝 Resumido</button>
-        <button class="btn btn-primary" onclick="aiNotes('moderate')">🤖 ${data.notes ? 'Regerar' : 'Gerar Anotações'}</button>
-        <button class="btn btn-secondary" onclick="aiNotes('detailed')">📚 Detalhado</button>
-        ${data.notes ? '<button class="btn btn-success" onclick="saveLesson()">💾 Salvar Aula Completa</button>' : ''}
-      </div>`;
-  }
   
-  if (step === 6 || data.status === 'saved') {
+  // STEP 4 — ANOTAÇÕES
+  } else if (step === 4) {
     container.innerHTML = `
-      <div style="text-align:center;padding:40px">
-        <div style="font-size:48px;margin-bottom:16px">✅</div>
-        <h3 style="font-family:Syne,sans-serif;font-size:20px;margin-bottom:8px">Aula Salva!</h3>
-        <p style="color:var(--text2);margin-bottom:24px">Sua aula está completa e pronta para uso.</p>
-        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-          <button class="btn btn-primary btn-lg" onclick="viewFullContent()">📖 Ver Conteúdo Completo</button>
-          <button class="btn btn-secondary btn-lg" onclick="startPresentation()">📡 Apresentar Aula</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <h3 style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:700">🗒️ Anotações do Professor</h3>
+        <button class="btn btn-sm btn-ghost" onclick="showPage('subject-detail')">✕ Cancelar e Voltar</button>
+      </div>
+      <p style="color:var(--text2);font-size:13px;margin-bottom:12px">Anotações sincronizadas com os slides — um tópico por ponto.</p>
+      <div id="notes-preview" class="ai-content-area" style="display:${data.notes ? 'block' : 'none'}">${markdownToHtml(data.notes || '')}</div>
+      <div id="notes-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Gerando anotações sincronizadas...</span></div>
+      <div class="ai-action-bar" style="margin-top:16px">
+        <button class="btn btn-ghost" onclick="renderLessonStep(3)">← Voltar</button>
+        <button class="btn btn-primary" onclick="aiNotes('moderate')">🤖 ${data.notes ? 'Regerar' : 'Gerar Anotações'}</button>
+        ${data.notes ? '<button class="btn btn-success" onclick="saveStepAndAdvance(4)">💾 Salvar e Avançar →</button>' : ''}
+      </div>`;
+  
+  // STEP 5 — SALVAR
+  } else if (step === 5) {
+    const isSaved = data.status === 'saved';
+    container.innerHTML = `
+      <div style="text-align:center;padding:32px 20px">
+        <div style="font-size:56px;margin-bottom:16px">${isSaved ? '✅' : '💾'}</div>
+        <h3 style="font-family:Montserrat,sans-serif;font-size:20px;font-weight:700;margin-bottom:8px">${isSaved ? 'Aula Salva!' : 'Pronto para Salvar'}</h3>
+        <p style="color:var(--text2);margin-bottom:8px;font-size:14px">
+          ${isSaved ? 'Sua aula está completa. Você pode apresentá-la ou editar qualquer etapa.' : 'Todas as etapas concluídas. Salve para finalizar sua aula.'}
+        </p>
+        ${data.research ? '<p style="color:var(--green);font-size:12px;margin-bottom:20px">✓ Pesquisa ✓ Estrutura ✓ Slides ✓ Anotações</p>' : ''}
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-ghost" onclick="renderLessonStep(4)">← Voltar às Anotações</button>
+          ${!isSaved ? '<button class="btn btn-success btn-lg" onclick="saveLesson()">💾 Salvar Aula Completa</button>' : ''}
+          ${isSaved ? '<button class="btn btn-primary btn-lg" onclick="startPresentation()">📡 Apresentar Aula</button>' : ''}
+          ${isSaved ? '<button class="btn btn-secondary" onclick="viewFullContent()">📖 Ver Conteúdo</button>' : ''}
         </div>
       </div>`;
   }
+}
+
+async function saveStepAndAdvance(currentStep) {
+  await saveLessonData();
+  const nextStep = currentStep + 1;
+  // Re-render editor to update green checkmarks
+  renderLessonEditor();
+  // Then show the next step content
+  setTimeout(() => renderLessonStep(nextStep), 50);
+  toast('✅ Etapa concluída! Avançando...', 'success');
 }
 
 // ========================
@@ -951,7 +973,7 @@ async function aiResearch() {
     await saveLessonData();
     content.innerHTML = markdownToHtml(result);
     content.style.display = 'block';
-    renderLessonStep(2);
+    renderLessonStep(1);
     toast('Pesquisa concluída!', 'success');
   } catch (err) {
     toast('Erro: ' + err.message, 'error');
@@ -985,7 +1007,7 @@ async function aiStructure() {
     await saveLessonData();
     content.innerHTML = markdownToHtml(result);
     content.style.display = 'block';
-    renderLessonStep(3);
+    renderLessonStep(2);
     toast('Estrutura criada!', 'success');
   } catch (err) {
     toast('Erro: ' + err.message, 'error');
@@ -1035,7 +1057,7 @@ async function aiSlides() {
     currentLessonData.slides = JSON.stringify(result);
     presentationSlides = result.slides || [];
     await saveLessonData();
-    renderLessonStep(4);
+    renderLessonStep(3);
     toast('Slides criados!', 'success');
   } catch (err) {
     toast('Erro: ' + err.message, 'error');
@@ -1047,8 +1069,8 @@ async function aiSlides() {
 async function aiNotes(detail) {
   const loading = document.getElementById('notes-loading');
   const preview = document.getElementById('notes-preview');
-  loading.style.display = 'flex';
-  preview.style.display = 'none';
+  if (loading) loading.style.display = 'flex';
+  if (preview) preview.style.display = 'none';
   
   try {
     let slides = [];
@@ -1056,47 +1078,50 @@ async function aiNotes(detail) {
       try { slides = JSON.parse(currentLessonData.slides).slides || []; } catch {}
     }
     
-    const detailMap = {
-      summary: 'concisas (1-2 frases por tópico)',
-      moderate: 'práticas (3-4 frases por tópico com exemplos)',
-      detailed: 'detalhadas (explicação completa, exemplos, dicas pedagógicas e possíveis perguntas dos alunos)'
-    };
+    if (slides.length === 0) {
+      toast('Gere os slides primeiro!', 'error');
+      return;
+    }
     
-    // Build slide summary for prompt
-    const slideSummary = slides.map((s, i) => 
-      `Slide ${i+1} — ${s.title}: ${(s.points || []).join(' | ')}`
-    ).join('\n');
+    // Build detailed slide map for prompt
+    const slideSummary = slides.map((s, i) => {
+      const points = (s.points || []);
+      return `SLIDE ${i+1}: "${s.title}"\n` + points.map((p, j) => `  Tópico ${j+1}: ${p}`).join('\n');
+    }).join('\n\n');
     
     const result = await claudeAI(
-      `Crie anotações SINCRONIZADAS para o professor da aula sobre "${currentLessonData.title}".
-      
-      IMPORTANTE: Para cada slide, crie EXATAMENTE uma anotação por tópico/ponto do slide.
-      A anotação de cada tópico deve explicar aquele conceito específico de forma ${detailMap[detail] || 'prática'}.
-      
-      Slides:
-      ${slideSummary}
-      
-      Formato de resposta para cada slide:
-      ## Slide N: [título]
-      **Tópico 1:** [explicação do que falar sobre este tópico específico]
-      **Tópico 2:** [explicação do tópico 2]
-      ... (um item por tópico do slide)
-      ⏱️ Tempo sugerido: X minutos
-      💡 Dica: [dica pedagógica do slide]
-      
-      Mantenha a mesma ordem e quantidade de tópicos de cada slide.`
+      `Crie anotações de professor para a aula sobre "${currentLessonData.title}".
+
+REGRAS OBRIGATÓRIAS:
+- Para cada slide, escreva EXATAMENTE o mesmo número de anotações que o número de tópicos do slide
+- Cada anotação explica APENAS o seu tópico correspondente — sem repetir o texto do slide
+- Escreva o que o professor deve FALAR/EXPLICAR sobre aquele tópico específico
+- Seja objetivo e único — sem repetições entre tópicos
+- Se o tópico menciona "Panteísmo", explique o conceito brevemente para o professor falar
+
+FORMATO EXATO (siga à risca):
+## Slide N — [Título do Slide]
+⏱️ [X] minutos
+1. [Explicação única do Tópico 1 — o que falar em 1-2 frases]
+2. [Explicação única do Tópico 2]
+... (mesmo número que os tópicos do slide)
+💡 [Uma dica pedagógica curta]
+
+SLIDES:
+${slideSummary}
+
+NÃO repita frases entre tópicos. Cada número deve trazer uma informação nova e distinta.`
     );
     
     currentLessonData.notes = result;
     await saveLessonData();
-    preview.innerHTML = markdownToHtml(result);
-    preview.style.display = 'block';
-    renderLessonStep(5);
-    toast('Anotações sincronizadas geradas!', 'success');
+    if (preview) { preview.innerHTML = markdownToHtml(result); preview.style.display = 'block'; }
+    renderLessonStep(4);
+    toast('Anotações sincronizadas!', 'success');
   } catch (err) {
     toast('Erro: ' + err.message, 'error');
   } finally {
-    loading.style.display = 'none';
+    if (loading) loading.style.display = 'none';
   }
 }
 
