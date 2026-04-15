@@ -1,6 +1,1 @@
-json{
-  "name": "aulasflow",
-  "version": "1.0.0",
-  "dependencies": {}
-}
-Clique em Commit changes e depois reimplante no Vercel!
+json{"name":"aulasflow","version":"1.0.0","dependencies":{}}
