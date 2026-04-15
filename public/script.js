@@ -1167,40 +1167,57 @@ function startPresentation() {
   renderSlide();
 }
 
+let currentTemplate = 'minimal';
+
 function renderSlide() {
   const slide = presentationSlides[currentSlide];
   if (!slide) return;
   
   const typeColors = {
-    intro: { bg: 'rgba(99,102,241,0.12)', border: 'var(--accent)', text: 'var(--accent2)', label: 'Introdução' },
-    content: { bg: 'rgba(16,185,129,0.06)', border: 'var(--border)', text: 'var(--green)', label: 'Conteúdo' },
-    example: { bg: 'rgba(245,158,11,0.06)', border: 'var(--border)', text: 'var(--yellow)', label: 'Exemplo' },
-    activity: { bg: 'rgba(6,182,212,0.06)', border: 'var(--border)', text: 'var(--cyan)', label: 'Atividade' },
-    summary: { bg: 'rgba(168,85,247,0.06)', border: 'var(--border)', text: 'var(--purple)', label: 'Resumo' },
-    conclusion: { bg: 'rgba(168,85,247,0.08)', border: 'var(--border)', text: 'var(--purple)', label: 'Conclusão' },
+    intro: { accent: '#6366f1', bg: 'rgba(99,102,241,0.1)', label: '📖 Introdução' },
+    content: { accent: '#10b981', bg: 'rgba(16,185,129,0.06)', label: '📚 Conteúdo' },
+    example: { accent: '#f59e0b', bg: 'rgba(245,158,11,0.06)', label: '💡 Exemplo' },
+    activity: { accent: '#06b6d4', bg: 'rgba(6,182,212,0.06)', label: '✏️ Atividade' },
+    summary: { accent: '#a855f7', bg: 'rgba(168,85,247,0.06)', label: '📋 Resumo' },
+    conclusion: { accent: '#ec4899', bg: 'rgba(236,72,153,0.06)', label: '🏁 Conclusão' },
   };
   
   const style = typeColors[slide.type] || typeColors.content;
   const total = presentationSlides.length;
   
-  document.getElementById('slide-display').innerHTML = `
-    <div class="slide-display-num">${currentSlide + 1} / ${total}</div>
-    <div class="slide-display-type-badge" style="background:${style.bg};color:${style.text};border:1px solid ${style.border}">${style.label}</div>
-    ${slide.subtitle ? `<p style="color:var(--text2);font-size:16px;margin-bottom:8px">${escHtml(slide.subtitle)}</p>` : ''}
-    <div class="slide-display-title">${escHtml(slide.title)}</div>
+  // Apply template class
+  const displayEl = document.getElementById('slide-display');
+  displayEl.className = `slide-display template-${currentTemplate}`;
+  
+  const isCorporate = currentTemplate === 'corporate';
+  const titleColor = isCorporate ? '#1a1d2e' : style.accent;
+  const textColor = isCorporate ? '#4a5068' : '';
+  
+  displayEl.innerHTML = `
+    <div class="slide-display-num" style="${isCorporate ? 'color:#8a8fa8' : ''}">${currentSlide + 1} / ${total}</div>
+    <div class="slide-display-type-badge" style="background:${style.bg};color:${style.accent};border:1px solid ${style.accent}40">${style.label}</div>
+    ${slide.subtitle ? `<p class="slide-display-subtitle" style="${isCorporate ? 'color:#4a5068' : ''}">${escHtml(slide.subtitle)}</p>` : ''}
+    <div class="slide-display-title" style="color:${titleColor}">${escHtml(slide.title)}</div>
     <div class="slide-display-points">
       ${(slide.points || slide.content || []).map((p, i) => `
         <div class="slide-point" style="animation-delay:${i * 0.08}s">
-          <div class="slide-point-bullet"></div>
-          <span>${escHtml(p)}</span>
+          <div class="slide-point-bullet" style="background:${style.accent}"></div>
+          <div>
+            <span style="${textColor ? 'color:' + textColor : ''}">${escHtml(p)}</span>
+            ${slide.subpoints && slide.subpoints[p] ? `
+              <ul class="slide-point-subpoints">
+                ${slide.subpoints[p].map(sp => `<li style="${isCorporate ? 'color:#6b7280' : ''}">${escHtml(sp)}</li>`).join('')}
+              </ul>` : ''}
+          </div>
         </div>
       `).join('')}
     </div>
-    ${slide.note ? `<div style="margin-top:16px;padding:10px 14px;background:rgba(245,158,11,0.08);border-left:3px solid var(--yellow);border-radius:0 8px 8px 0;font-size:13px;color:var(--yellow)">💡 ${escHtml(slide.note)}</div>` : ''}
+    ${slide.highlight ? `<div class="slide-highlight" style="border-color:${style.accent};color:${style.accent};background:${style.bg}">✨ ${escHtml(slide.highlight)}</div>` : ''}
+    ${slide.note ? `<div style="margin-top:16px;padding:10px 14px;background:rgba(245,158,11,0.08);border-left:3px solid #f59e0b;border-radius:0 8px 8px 0;font-size:13px;color:#f59e0b">💡 Prof: ${escHtml(slide.note)}</div>` : ''}
   `;
   
   document.getElementById('slide-counter').textContent = `${currentSlide + 1} / ${total}`;
-  document.getElementById('progress-bar').style.width = `${((currentSlide + 1) / total) * 100}%`;
+  document.getElementById('progress-bar').style.width = `\${((currentSlide + 1) / total) * 100}%`;
   
   const notesLines = presentationNotes.split('\n');
   const slideNotes = notesLines.slice(currentSlide * 3, currentSlide * 3 + 10).join('\n') || `Anotações para: ${slide.title}`;
@@ -1843,3 +1860,25 @@ async function expandResearch() {
     if (btn) { btn.disabled = false; btn.textContent = '📈 Expandir +20%'; }
   }
 }
+
+// ========================
+// THEME TOGGLE
+// ========================
+function toggleTheme() {
+  const body = document.body;
+  const btn = document.getElementById('theme-btn');
+  body.classList.toggle('light-mode');
+  const isLight = body.classList.contains('light-mode');
+  if (btn) btn.textContent = isLight ? '🌙' : '☀️';
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+}
+
+// Load saved theme
+(function() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'light') {
+    document.body.classList.add('light-mode');
+    const btn = document.getElementById('theme-btn');
+    if (btn) btn.textContent = '🌙';
+  }
+})();
