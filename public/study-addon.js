@@ -389,10 +389,26 @@ function startPresentationStudy() {
   document.body.style.overflow = 'hidden';
 }
 
+function getSlideNotes(slideIndex) {
+  // Extract notes for this specific slide from the notes text
+  const notes = currentLessonData.notes || '';
+  if (!notes) return '';
+  
+  // Try to find the section for this slide number
+  const slideNum = slideIndex + 1;
+  const regex = new RegExp(`##\s*Slide\s*${slideNum}[:\s][\s\S]*?(?=##\s*Slide\s*${slideNum + 1}|$)`, 'i');
+  const match = notes.match(regex);
+  if (match) return match[0];
+  
+  // Fallback: split by lines and get chunk
+  const lines = notes.split('\n');
+  const chunkSize = Math.ceil(lines.length / Math.max(presentationSlides.length, 1));
+  return lines.slice(slideIndex * chunkSize, (slideIndex + 1) * chunkSize).join('\n') || notes.substring(0, 300);
+}
+
 function renderPresentationScreen() {
   const p = document.getElementById('presentation-screen');
   const slide = presentationSlides[currentSlide];
-  const notes = currentLessonData.notes || '';
   const total = presentationSlides.length;
 
   const typeColors = {
@@ -404,6 +420,7 @@ function renderPresentationScreen() {
     conclusion: { accent: '#ec4899', bg: 'rgba(236,72,153,0.06)', label: '🏁 Conclusão' },
   };
   const style = typeColors[slide.type] || typeColors.content;
+  const slideNotes = getSlideNotes(currentSlide);
 
   p.innerHTML = `
     <div class="pres-layout">
@@ -439,42 +456,89 @@ function renderPresentationScreen() {
         </div>
 
         <div class="pres-controls">
+          <button class="pres-btn pres-btn-danger" onclick="closePresentationScreen()">✕ Sair</button>
           <button class="pres-btn" onclick="prevSlideStudy()" ${currentSlide === 0 ? 'disabled' : ''}>← Anterior</button>
           <div class="pres-progress">
-            ${presentationSlides.map((_, i) => `<div class="pres-dot ${i === currentSlide ? 'active' : ''}" onclick="goToSlideStudy(${i})" style="${i === currentSlide ? `background:${style.accent}` : ''}"></div>`).join('')}
+            ${presentationSlides.map((_, i) => `<div class="pres-dot ${i === currentSlide ? 'active' : ''}" onclick="goToSlideStudy(${i})" style="${i === currentSlide ? 'background:' + style.accent : ''}"></div>`).join('')}
           </div>
           <button class="pres-btn pres-btn-primary" onclick="nextSlideStudy()" ${currentSlide === total - 1 ? 'disabled' : ''} style="background:${style.accent}">Próximo →</button>
         </div>
       </div>
 
-      <div class="pres-teacher-panel">
+      <div class="pres-teacher-panel" id="pres-teacher-panel">
         <div class="pres-teacher-header">
           <span>🎓 Painel do Professor</span>
           <button class="pres-close-btn" onclick="closePresentationScreen()">✕ Fechar</button>
         </div>
 
+        <!-- Slide Note -->
         ${slide.note ? `
           <div class="pres-slide-note">
-            <div class="pres-notes-label">📌 Nota deste slide</div>
+            <div class="pres-notes-label">📌 Nota do slide</div>
             <div class="pres-note-text">${escHtml(slide.note)}</div>
           </div>` : ''}
 
-        <div class="pres-search-area">
-          <div class="pres-search-label">🔍 Pesquisa Rápida com IA</div>
-          <div class="pres-search-row">
-            <input type="text" id="pres-search-input" class="pres-search-input" placeholder="Pesquise algo para explicar melhor...">
-            <button class="pres-btn pres-btn-primary" onclick="presSearch()" style="background:${style.accent}">Buscar</button>
+        <!-- Synchronized Notes for this slide -->
+        <div class="pres-notes-area" id="pres-notes-area">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div class="pres-notes-label">📝 Anotações — Slide ${currentSlide + 1}</div>
+            <button class="pres-btn pres-btn-sm" onclick="toggleAISearch()" style="font-size:10px;padding:4px 8px;background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.3)">🔍 Pesquisa IA</button>
           </div>
-          <div id="pres-search-result" class="pres-search-result"></div>
+          <div class="pres-notes-content">${markdownToHtml(slideNotes)}</div>
         </div>
 
-        <div class="pres-notes-area">
-          <div class="pres-notes-label">📝 Suas Anotações</div>
-          <div class="pres-notes-content">${markdownToHtml(notes)}</div>
+        <!-- AI Search Panel (hidden by default) -->
+        <div class="pres-ai-search-panel" id="pres-ai-search-panel" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div class="pres-notes-label">🔍 Pesquisa Rápida com IA</div>
+            <button class="pres-btn pres-btn-sm" onclick="toggleAISearch()" style="font-size:10px;padding:4px 8px">✕ Fechar</button>
+          </div>
+          <div class="pres-search-row">
+            <input type="text" id="pres-search-input" class="pres-search-input" placeholder="O que deseja pesquisar?" onkeydown="if(event.key==='Enter') presSearch()">
+            <button class="pres-btn pres-btn-primary" onclick="presSearch()" style="background:${style.accent};font-size:11px">Buscar</button>
+          </div>
+          <div id="pres-search-result" class="pres-search-result" style="margin-top:8px"></div>
+          <div id="pres-search-actions" style="display:none;margin-top:8px;display:flex;gap:6px">
+            <button class="pres-btn pres-btn-sm" onclick="appendSearchToNotes()" style="font-size:10px;background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3)">📎 Resumir e Anexar às Anotações</button>
+          </div>
         </div>
       </div>
     </div>
   `;
+}
+
+function toggleAISearch() {
+  const searchPanel = document.getElementById('pres-ai-search-panel');
+  const notesArea = document.getElementById('pres-notes-area');
+  if (!searchPanel || !notesArea) return;
+  const isHidden = searchPanel.style.display === 'none';
+  searchPanel.style.display = isHidden ? 'flex' : 'none';
+  searchPanel.style.flexDirection = 'column';
+  notesArea.style.display = isHidden ? 'none' : 'flex';
+  notesArea.style.flexDirection = isHidden ? '' : 'column';
+  if (isHidden) {
+    setTimeout(() => document.getElementById('pres-search-input')?.focus(), 100);
+  }
+}
+
+async function appendSearchToNotes() {
+  const result = document.getElementById('pres-search-result');
+  if (!result || !result.textContent.trim()) return;
+  
+  const summary = result.textContent.trim();
+  const slideNum = currentSlide + 1;
+  const append = `\n\n---\n📎 Pesquisa adicional (Slide ${slideNum}): ${summary.substring(0, 500)}`;
+  
+  currentLessonData.notes = (currentLessonData.notes || '') + append;
+  
+  try {
+    const sb = getSupabase();
+    await sb.from('lessons').update({ notes: currentLessonData.notes }).eq('id', currentLessonId);
+    toast('Resumo anexado às anotações!', 'success');
+  } catch {}
+  
+  toggleAISearch();
+  renderPresentationScreen();
 }
 
 function nextSlideStudy() {
@@ -492,16 +556,20 @@ function closePresentationScreen() {
 }
 
 async function presSearch() {
-  const q = document.getElementById('pres-search-input').value.trim();
+  const q = document.getElementById('pres-search-input')?.value.trim();
   if (!q) return;
   const r = document.getElementById('pres-search-result');
+  const actions = document.getElementById('pres-search-actions');
+  if (!r) return;
   r.innerHTML = '<div class="pres-search-loading">🤔 Buscando com IA...</div>';
+  if (actions) actions.style.display = 'none';
   try {
     const result = await claudeAI(
       `Explique de forma clara e objetiva para um professor usar em sala de aula: "${q}". 
-       Seja direto, use exemplos práticos e linguagem acessível. Máximo 3 parágrafos.`
+       Seja direto, use exemplos práticos e linguagem acessível. Máximo 2 parágrafos curtos.`
     );
     r.innerHTML = `<div class="pres-search-answer">${markdownToHtml(result)}</div>`;
+    if (actions) actions.style.display = 'flex';
   } catch (err) {
     r.innerHTML = `<div class="pres-search-error">Erro: ${err.message}</div>`;
   }

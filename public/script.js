@@ -790,27 +790,34 @@ function renderLessonEditor() {
   if (isSaved) activeStep = 6;
   
   const steps = [
-    { num: 1, label: 'Pesquisa' },
-    { num: 2, label: 'Estrutura' },
-    { num: 3, label: 'Conteúdo' },
-    { num: 4, label: 'Slides' },
-    { num: 5, label: 'Anotações' },
-    { num: 6, label: 'Salvar' },
+    { num: 1, label: 'Pesquisa', icon: '🔍', unlocked: true },
+    { num: 2, label: 'Estrutura', icon: '📋', unlocked: !!data.research },
+    { num: 3, label: 'Conteúdo', icon: '📝', unlocked: !!data.structure },
+    { num: 4, label: 'Slides', icon: '🎞️', unlocked: !!data.research },
+    { num: 5, label: 'Anotações', icon: '🗒️', unlocked: !!data.slides },
+    { num: 6, label: 'Salvar', icon: '💾', unlocked: !!data.notes },
   ];
   
-  const stepsHtml = steps.map(s => `
-    <div class="ai-step ${s.num < activeStep ? 'completed' : s.num === activeStep ? 'active' : ''}">
-      <div class="ai-step-num">${s.num < activeStep ? '✓' : s.num}</div>
+  const stepsHtml = steps.map(s => {
+    const isDone = s.num < activeStep;
+    const isActive = s.num === activeStep;
+    const isLocked = !s.unlocked && !isDone;
+    return `
+    <div class="ai-step ${isDone ? 'completed' : isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}"
+         onclick="${s.unlocked || isDone ? 'renderLessonStep(' + s.num + ')' : ''}"
+         style="cursor:${s.unlocked || isDone ? 'pointer' : 'not-allowed'};opacity:${isLocked ? '0.4' : '1'}"
+         title="${isLocked ? 'Complete a etapa anterior primeiro' : s.label}">
+      <div class="ai-step-num">${isDone ? '✓' : isLocked ? '🔒' : s.icon}</div>
       <span>${s.label}</span>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
   
   const container = document.getElementById('lesson-editor-content');
   container.innerHTML = `
     <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
       <button class="btn btn-sm btn-ghost" onclick="showPage('subject-detail')">← Voltar</button>
-      <h2 style="font-family:Syne,sans-serif;font-size:18px;font-weight:700;flex:1">${escHtml(data.title)}</h2>
-      ${isSaved ? `<button class="btn btn-sm btn-primary" onclick="startPresentation()">📡 Apresentar</button>` : ''}
+      <h2 style="font-family:Montserrat,sans-serif;font-size:18px;font-weight:700;flex:1">${escHtml(data.title)}</h2>
+      ${isSaved ? '<button class="btn btn-sm btn-primary" onclick="startPresentation()">📡 Apresentar</button>' : ''}
     </div>
     
     <div class="ai-steps">${stepsHtml}</div>
@@ -1044,28 +1051,40 @@ async function aiNotes(detail) {
   preview.style.display = 'none';
   
   try {
-    const detailMap = {
-      summary: 'resumidas (pontos-chave em bullet points)',
-      moderate: 'moderadas (explicações práticas para cada tópico)',
-      detailed: 'detalhadas (guia completo com dicas, exemplos e explicações aprofundadas)'
-    };
-    
     let slides = [];
     if (currentLessonData.slides) {
       try { slides = JSON.parse(currentLessonData.slides).slides || []; } catch {}
     }
     
+    const detailMap = {
+      summary: 'concisas (1-2 frases por tópico)',
+      moderate: 'práticas (3-4 frases por tópico com exemplos)',
+      detailed: 'detalhadas (explicação completa, exemplos, dicas pedagógicas e possíveis perguntas dos alunos)'
+    };
+    
+    // Build slide summary for prompt
+    const slideSummary = slides.map((s, i) => 
+      `Slide ${i+1} — ${s.title}: ${(s.points || []).join(' | ')}`
+    ).join('\n');
+    
     const result = await claudeAI(
-      `Crie anotações de professor ${detailMap[detail] || 'moderadas'} para a aula sobre "${currentLessonData.title}".
+      `Crie anotações SINCRONIZADAS para o professor da aula sobre "${currentLessonData.title}".
       
-      Slides da aula: ${JSON.stringify(slides.slice(0, 8))}
+      IMPORTANTE: Para cada slide, crie EXATAMENTE uma anotação por tópico/ponto do slide.
+      A anotação de cada tópico deve explicar aquele conceito específico de forma ${detailMap[detail] || 'prática'}.
       
-      Inclua para cada slide principal:
-      - O que falar / explicar
-      - Dicas pedagógicas
-      - Exemplos para usar em sala
-      - Possíveis dúvidas dos alunos e como responder
-      - Tempo sugerido`
+      Slides:
+      ${slideSummary}
+      
+      Formato de resposta para cada slide:
+      ## Slide N: [título]
+      **Tópico 1:** [explicação do que falar sobre este tópico específico]
+      **Tópico 2:** [explicação do tópico 2]
+      ... (um item por tópico do slide)
+      ⏱️ Tempo sugerido: X minutos
+      💡 Dica: [dica pedagógica do slide]
+      
+      Mantenha a mesma ordem e quantidade de tópicos de cada slide.`
     );
     
     currentLessonData.notes = result;
@@ -1073,7 +1092,7 @@ async function aiNotes(detail) {
     preview.innerHTML = markdownToHtml(result);
     preview.style.display = 'block';
     renderLessonStep(5);
-    toast('Anotações geradas!', 'success');
+    toast('Anotações sincronizadas geradas!', 'success');
   } catch (err) {
     toast('Erro: ' + err.message, 'error');
   } finally {
@@ -1869,16 +1888,23 @@ function toggleTheme() {
   const btn = document.getElementById('theme-btn');
   body.classList.toggle('light-mode');
   const isLight = body.classList.contains('light-mode');
-  if (btn) btn.textContent = isLight ? '🌙' : '☀️';
+  // Light mode = show moon (to switch to dark), Dark mode = show sun (to switch to light)
+  if (btn) {
+    btn.textContent = isLight ? '🌙' : '☀️';
+    btn.title = isLight ? 'Mudar para Modo Escuro' : 'Mudar para Modo Claro';
+  }
   localStorage.setItem('theme', isLight ? 'light' : 'dark');
 }
 
-// Load saved theme
-(function() {
+function initTheme() {
   const saved = localStorage.getItem('theme');
+  const btn = document.getElementById('theme-btn');
   if (saved === 'light') {
     document.body.classList.add('light-mode');
-    const btn = document.getElementById('theme-btn');
-    if (btn) btn.textContent = '🌙';
+    if (btn) { btn.textContent = '🌙'; btn.title = 'Mudar para Modo Escuro'; }
+  } else {
+    if (btn) { btn.textContent = '☀️'; btn.title = 'Mudar para Modo Claro'; }
   }
-})();
+}
+// Init after DOM loads
+document.addEventListener('DOMContentLoaded', () => setTimeout(initTheme, 100));
