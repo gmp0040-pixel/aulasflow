@@ -1194,90 +1194,30 @@ function viewFullContent() {
 // PRESENTATION
 // ========================
 function startPresentation() {
-  if (currentLessonData.slides && currentLessonData.slides.length > 0) {
+  if (currentLessonData.slides) {
     try {
       const parsed = JSON.parse(currentLessonData.slides);
       presentationSlides = parsed.slides || [];
     } catch {}
   }
-  
   if (!presentationSlides || presentationSlides.length === 0) return toast('Crie os slides primeiro', 'error');
-  
-  presentationNotes = currentLessonData.notes || '';
   currentSlide = 0;
-  
-  document.getElementById('presentation-mode').classList.add('active');
-  document.body.style.overflow = 'hidden';
-  renderSlide();
+  // Use the unified presentation screen from study-addon.js
+  startPresentationStudy();
 }
 
-let currentTemplate = 'minimal';
-
-function renderSlide() {
-  const slide = presentationSlides[currentSlide];
-  if (!slide) return;
-  
-  const typeColors = {
-    intro: { accent: '#6366f1', bg: 'rgba(99,102,241,0.1)', label: '📖 Introdução' },
-    content: { accent: '#10b981', bg: 'rgba(16,185,129,0.06)', label: '📚 Conteúdo' },
-    example: { accent: '#f59e0b', bg: 'rgba(245,158,11,0.06)', label: '💡 Exemplo' },
-    activity: { accent: '#06b6d4', bg: 'rgba(6,182,212,0.06)', label: '✏️ Atividade' },
-    summary: { accent: '#a855f7', bg: 'rgba(168,85,247,0.06)', label: '📋 Resumo' },
-    conclusion: { accent: '#ec4899', bg: 'rgba(236,72,153,0.06)', label: '🏁 Conclusão' },
-  };
-  
-  const style = typeColors[slide.type] || typeColors.content;
-  const total = presentationSlides.length;
-  
-  // Apply template class
-  const displayEl = document.getElementById('slide-display');
-  displayEl.className = `slide-display template-${currentTemplate}`;
-  
-  const isCorporate = currentTemplate === 'corporate';
-  const titleColor = isCorporate ? '#1a1d2e' : style.accent;
-  const textColor = isCorporate ? '#4a5068' : '';
-  
-  displayEl.innerHTML = `
-    <div class="slide-display-num" style="${isCorporate ? 'color:#8a8fa8' : ''}">${currentSlide + 1} / ${total}</div>
-    <div class="slide-display-type-badge" style="background:${style.bg};color:${style.accent};border:1px solid ${style.accent}40">${style.label}</div>
-    ${slide.subtitle ? `<p class="slide-display-subtitle" style="${isCorporate ? 'color:#4a5068' : ''}">${escHtml(slide.subtitle)}</p>` : ''}
-    <div class="slide-display-title" style="color:${titleColor}">${escHtml(slide.title)}</div>
-    <div class="slide-display-points">
-      ${(slide.points || slide.content || []).map((p, i) => `
-        <div class="slide-point" style="animation-delay:${i * 0.08}s">
-          <div class="slide-point-bullet" style="background:${style.accent}"></div>
-          <div>
-            <span style="${textColor ? 'color:' + textColor : ''}">${escHtml(p)}</span>
-            ${slide.subpoints && slide.subpoints[p] ? `
-              <ul class="slide-point-subpoints">
-                ${slide.subpoints[p].map(sp => `<li style="${isCorporate ? 'color:#6b7280' : ''}">${escHtml(sp)}</li>`).join('')}
-              </ul>` : ''}
-          </div>
-        </div>
-      `).join('')}
-    </div>
-    ${slide.highlight ? `<div class="slide-highlight" style="border-color:${style.accent};color:${style.accent};background:${style.bg}">✨ ${escHtml(slide.highlight)}</div>` : ''}
-    ${slide.note ? `<div style="margin-top:16px;padding:10px 14px;background:rgba(245,158,11,0.08);border-left:3px solid #f59e0b;border-radius:0 8px 8px 0;font-size:13px;color:#f59e0b">💡 Prof: ${escHtml(slide.note)}</div>` : ''}
-  `;
-  
-  document.getElementById('slide-counter').textContent = `${currentSlide + 1} / ${total}`;
-  document.getElementById('progress-bar').style.width = `\${((currentSlide + 1) / total) * 100}%`;
-  
-  const notesLines = presentationNotes.split('\n');
-  const slideNotes = notesLines.slice(currentSlide * 3, currentSlide * 3 + 10).join('\n') || `Anotações para: ${slide.title}`;
-  document.getElementById('notes-content').textContent = slideNotes;
-}
-
-function nextSlide() { if (currentSlide < presentationSlides.length - 1) { currentSlide++; renderSlide(); } }
-function prevSlide() { if (currentSlide > 0) { currentSlide--; renderSlide(); } }
-function toggleNotes() { document.getElementById('notes-panel').classList.toggle('visible'); }
-function exitPresentation() { document.getElementById('presentation-mode').classList.remove('active'); document.body.style.overflow = ''; }
+// Keep legacy functions for keyboard listener compatibility
+function nextSlide() { nextSlideStudy(); }
+function prevSlide() { prevSlideStudy(); }
+function toggleNotes() {}
+function exitPresentation() { closePresentationScreen(); }
 
 document.addEventListener('keydown', (e) => {
-  if (!document.getElementById('presentation-mode').classList.contains('active')) return;
-  if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
-  if (e.key === 'ArrowLeft') prevSlide();
-  if (e.key === 'Escape') exitPresentation();
+  const p = document.getElementById('presentation-screen');
+  if (!p || p.style.display !== 'flex') return;
+  if (e.key === 'ArrowRight' || e.key === ' ') nextSlideStudy();
+  if (e.key === 'ArrowLeft') prevSlideStudy();
+  if (e.key === 'Escape') closePresentationScreen();
 });
 
 // ========================
