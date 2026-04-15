@@ -3,31 +3,34 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const GEMINI_KEY = process.env.GEMINI_API_KEY;
-  if (!GEMINI_KEY) {
+  const GROQ_KEY = process.env.GROQ_API_KEY;
+  if (!GROQ_KEY) {
     return res.status(500).json({ error: 'API key não configurada' });
   }
 
   try {
     const { prompt, system, max_tokens } = req.body;
-    const fullPrompt = system ? `${system}\n\n${prompt}` : prompt;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: fullPrompt }] }],
-          generationConfig: { maxOutputTokens: max_tokens || 4000, temperature: 0.7 }
-        })
-      }
-    );
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: max_tokens || 4000,
+        messages: [
+          { role: 'system', content: system || 'Você é um assistente educacional especializado em criar conteúdo pedagógico de alta qualidade em português brasileiro.' },
+          { role: 'user', content: prompt }
+        ]
+      })
+    });
 
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || 'Erro na API');
+    if (!response.ok) throw new Error(data.error?.message || 'Erro na API Groq');
 
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = data.choices?.[0]?.message?.content;
     if (!text) throw new Error('Resposta vazia');
 
     return res.status(200).json({ content: text });
