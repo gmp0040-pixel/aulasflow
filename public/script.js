@@ -59,7 +59,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const sb = getSupabase();
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
-    const { data: profile } = await sb.from('profiles').select('*').eq('id', session.user.id).single();
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
     currentUser = { id: session.user.id, name: profile?.name || session.user.email, email: session.user.email };
     showApp();
   } else {
@@ -98,7 +98,7 @@ async function login() {
     
     let userName = email;
     try {
-      const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
+      const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
       if (profile?.name) userName = profile.name;
     } catch {}
     
