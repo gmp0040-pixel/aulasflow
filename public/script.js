@@ -836,6 +836,7 @@ function renderLessonStep(step) {
       <div id="research-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Pesquisando com IA...</span></div>
       <div class="ai-action-bar" style="margin-top:12px">
         <button class="btn btn-primary" id="research-btn" onclick="aiResearch()">🤖 Pesquisar com IA</button>
+        ${data.research ? '<button class="btn btn-secondary" id="expand-btn" onclick="expandResearch()">📈 Expandir +20%</button>' : ''}
         ${data.research ? '<button class="btn btn-success" onclick="renderLessonStep(2)">Próximo: Estruturar →</button>' : ''}
       </div>`;
   } else if (step === 2) {
@@ -1801,4 +1802,44 @@ function toast(message, type = 'info') {
   el.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${escHtml(message)}</span>`;
   container.appendChild(el);
   setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; setTimeout(() => el.remove(), 300); }, 3500);
+}
+
+// ========================
+// EXPAND RESEARCH
+// ========================
+async function expandResearch() {
+  if (!currentLessonData.research) return toast('Faça a pesquisa primeiro', 'error');
+  
+  const btn = document.getElementById('expand-btn');
+  const loading = document.getElementById('research-loading');
+  const content = document.getElementById('research-content');
+  
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Expandindo...'; }
+  if (loading) loading.style.display = 'flex';
+  
+  try {
+    const result = await claudeAI(
+      `Expanda o seguinte conteúdo educacional sobre "${currentLessonData.title}" em aproximadamente 20%, adicionando:
+      - Mais argumentos e evidências para os pontos já existentes
+      - Exemplos adicionais mais detalhados
+      - Contexto histórico ou científico extra
+      - Conexões com outros temas relevantes
+      
+      CONTEÚDO ATUAL:
+      ${currentLessonData.research}
+      
+      Mantenha a estrutura e os títulos originais, apenas enriqueça cada seção com mais conteúdo.`
+    );
+    
+    currentLessonData.research = result;
+    await saveLessonData();
+    if (content) { content.innerHTML = markdownToHtml(result); content.style.display = 'block'; }
+    toast('Conteúdo expandido em 20%!', 'success');
+    renderLessonStep(1);
+  } catch (err) {
+    toast('Erro: ' + err.message, 'error');
+  } finally {
+    if (loading) loading.style.display = 'none';
+    if (btn) { btn.disabled = false; btn.textContent = '📈 Expandir +20%'; }
+  }
 }
