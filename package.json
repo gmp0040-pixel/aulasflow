@@ -1,1 +1,5 @@
-json{"name":"aulasflow","version":"1.0.0","dependencies":{}}
+{
+  "name": "aulasflow",
+  "version": "1.0.0",
+  "dependencies": {}
+}
