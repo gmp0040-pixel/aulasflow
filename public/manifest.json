@@ -1,12 +1,12 @@
 {
-  "name": "AulaFlow",
+  "name": "AulaFlow — Seminário",
   "short_name": "AulaFlow",
-  "description": "Sistema inteligente para professores com IA integrada",
+  "description": "Sistema inteligente para professores de seminário",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f1117",
+  "background_color": "#0a0c12",
   "theme_color": "#6366f1",
-  "orientation": "any",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -20,7 +20,5 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "categories": ["education", "productivity"],
-  "lang": "pt-BR"
+  ]
 }
