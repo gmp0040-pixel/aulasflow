@@ -1,5 +1,12 @@
 {
   "name": "aulasflow",
   "version": "1.0.0",
-  "dependencies": {}
+  "description": "Sistema de geração de conteúdo pedagógico para seminário",
+  "main": "api/handler.js",
+  "dependencies": {
+    "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": "18.x"
+  }
 }
