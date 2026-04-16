@@ -33,7 +33,7 @@ async function claudeAI(prompt, systemPrompt, max_tokens) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       prompt,
-      system: systemPrompt || 'Você é um assistente educacional especializado em criar conteúdo pedagógico de alta qualidade em português brasileiro. Seja detalhado, preciso e didático.',
+      system: systemPrompt || 'Você é um assistente educacional especializado em teologia reformada e presbiteriana renovada, criando conteúdo pedagógico de alta qualidade em português brasileiro para um seminário teológico presbiteriano renovado. Todo conteúdo deve ser fundamentado nas Escrituras Sagradas, alinhado com a fé reformada e presbiteriana, considerando a abertura à renovação e ao mover do Espírito Santo dentro dos limites da sã doutrina reformada. Use referências bíblicas relevantes, cite teólogos reformados quando apropriado (como Calvino, Berkhof, Sproul, Kuyper, etc.), e mantenha linguagem teológica adequada para formação ministerial. Seja detalhado, preciso e didático.',
       max_tokens: max_tokens || 4000
     })
   });
@@ -59,7 +59,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const sb = getSupabase();
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
-    const { data: profile } = await sb.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', session.user.id).single();
     currentUser = { id: session.user.id, name: profile?.name || session.user.email, email: session.user.email };
     showApp();
   } else {
@@ -98,7 +98,7 @@ async function login() {
     
     let userName = email;
     try {
-      const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
+      const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
       if (profile?.name) userName = profile.name;
     } catch {}
     

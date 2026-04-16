@@ -1,6 +1,9 @@
 // ========================
 // STUDY ADDON — AulaFlow
+// Sistema para Seminário Presbiteriano Renovado
 // ========================
+
+const SEMINARY_SYSTEM = 'Você é um assistente teológico especializado em teologia reformada e presbiteriana renovada, para um seminário teológico presbiteriano renovado no Brasil. Todo conteúdo deve ser: fundamentado nas Escrituras Sagradas (use referências bíblicas específicas), alinhado com a fé reformada e presbiteriana, aberto à renovação e ao mover do Espírito Santo dentro dos limites da sã doutrina reformada. Cite teólogos reformados quando relevante (Calvino, Berkhof, Sproul, Kuyper, Hodge, Bavinck, etc.). Mantenha linguagem teológica adequada para formação ministerial. Escreva em português brasileiro. Seja detalhado, preciso e didático.';
 
 async function openStudyScreen(lessonId, lessonTitle) {
   currentLessonId = lessonId;
@@ -27,9 +30,9 @@ async function openStudyScreen(lessonId, lessonTitle) {
       <div class="study-body">
         <div class="study-main" id="study-main">
           <div class="study-welcome" id="study-welcome">
-            <div class="study-welcome-icon">🎓</div>
+            <div class="study-welcome-icon">✝️</div>
             <h2>Pronto para estudar?</h2>
-            <p>Clique em <strong>Pesquisar sobre o tema</strong> para gerar conteúdo completo com IA sobre <em>${escHtml(lessonTitle)}</em></p>
+            <p>Clique em <strong>Pesquisar sobre o tema</strong> para gerar conteúdo teológico completo com IA sobre <em>${escHtml(lessonTitle)}</em></p>
             <button class="study-btn study-btn-primary study-btn-lg" onclick="searchTopic('${escHtml(lessonTitle)}')">🔍 Pesquisar sobre o tema</button>
           </div>
 
@@ -127,25 +130,25 @@ async function searchTopic(topic) {
   showStudyLoading(`Pesquisando "${topic}" com IA...`);
   try {
     const content = await claudeAI(
-      `Faça uma pesquisa COMPLETA e DETALHADA sobre o tema educacional: "${topic}".
+      `Faça uma pesquisa COMPLETA e DETALHADA sobre o tema teológico: "${topic}" para um seminário presbiteriano renovado.
       
       Estruture com:
-      ## 1. Introdução e Contexto
-      ## 2. Conceitos Fundamentais
-      ## 3. Desenvolvimento do Tema
-      ## 4. Aplicações e Exemplos Práticos
-      ## 5. Curiosidades e Aprofundamento
-      ## 6. Síntese
+      ## 1. Introdução e Contexto Bíblico
+      ## 2. Fundamentos Teológicos Reformados
+      ## 3. Desenvolvimento Doutrinal
+      ## 4. Aplicações Práticas para o Ministério
+      ## 5. Perspectiva da Renovação dentro da Tradição Reformada
+      ## 6. Síntese e Conclusão
       
-      Escreva de forma clara e didática para professores.`,
-      'Você é especialista em educação. Crie conteúdo rico em português.'
+      Use referências bíblicas específicas. Cite teólogos reformados quando relevante.`,
+      SEMINARY_SYSTEM
     );
 
     const notes = await claudeAI(
-      `Com base neste conteúdo sobre "${topic}", crie anotações práticas para o professor:
+      `Com base neste conteúdo teológico sobre "${topic}", crie anotações práticas para o professor do seminário:
       ${content.substring(0, 2000)}
-      Inclua: o que enfatizar, dicas para engajar alunos, exemplos para usar.`,
-      'Crie anotações pedagógicas objetivas em português.'
+      Inclua: pontos doutrinários essenciais a enfatizar, como conectar com a prática ministerial, perguntas para reflexão dos alunos, referências bíblicas-chave.`,
+      SEMINARY_SYSTEM
     );
 
     document.getElementById('study-welcome').style.display = 'none';
@@ -169,9 +172,9 @@ async function regenerateNotes() {
   showStudyLoading('Gerando anotações...');
   try {
     const notes = await claudeAI(
-      `Com base no conteúdo: ${currentLessonData.research.substring(0, 2000)}
-      Crie anotações do professor com dicas, exemplos e sugestões de atividades.`,
-      'Crie anotações pedagógicas em português.'
+      `Com base no conteúdo teológico: ${currentLessonData.research.substring(0, 2000)}
+      Crie anotações do professor com dicas de ensino, referências bíblicas adicionais, perguntas para debate e sugestões de atividades para o seminário.`,
+      SEMINARY_SYSTEM
     );
     document.getElementById('study-notes-content').innerHTML = markdownToHtml(notes);
     currentLessonData.notes = notes;
@@ -196,17 +199,18 @@ async function generateSlides() {
   showStudyLoading(`Criando ${count} slides com IA...`);
   try {
     const result = await claudeJSON(
-      `Crie ${count} slides COMPLETOS para aula sobre: "${currentLessonData.title || 'o tema'}".
+      `Crie ${count} slides COMPLETOS para aula teológica sobre: "${currentLessonData.title || 'o tema'}" em um seminário presbiteriano renovado.
       Conteúdo: ${currentLessonData.research.substring(0, 3500)}
       
       Retorne APENAS JSON:
-      {"slides":[{"type":"intro","title":"","subtitle":"","points":["frase completa 1","frase completa 2","..."],"subpoints":{},"highlight":"frase chave","note":"dica para professor"}]}
+      {"slides":[{"type":"intro","title":"","subtitle":"","points":["frase completa 1","frase completa 2","..."],"subpoints":{},"highlight":"frase chave ou versículo","note":"dica para o professor"}]}
       
       Tipos: intro, content, example, activity, summary, conclusion
       - 1º slide = intro, últimos 2 = summary e conclusion
-      - Cada slide: 4-6 points com frases COMPLETAS (não palavras soltas)
-      - note = dica exclusiva para o professor (não aparece na apresentação)`,
-      'Retorne APENAS JSON válido.'
+      - Cada slide: 4-6 points com frases COMPLETAS
+      - Inclua referências bíblicas nos points quando relevante
+      - note = orientação exclusiva para o professor (não aparece na apresentação)`,
+      'Retorne APENAS JSON válido. Contexto: seminário presbiteriano renovado.'
     );
 
     presentationSlides = result.slides || [];
@@ -269,7 +273,7 @@ async function saveStudyContent() {
 async function loadSavedStudyContent(lessonId) {
   try {
     const sb = getSupabase();
-    const { data: lesson } = await sb.from('lessons').select('*').eq('id', lessonId).single();
+    const { data: lesson } = await sb.from('lessons').select('*').eq('id', lessonId).maybeSingle();
     if (lesson && lesson.research) {
       currentLessonData.research = lesson.research;
       currentLessonData.notes = lesson.notes;
@@ -306,16 +310,13 @@ function startPresentationStudy() {
   document.body.style.overflow = 'hidden';
 }
 
-// ---- get synchronized notes for current slide ----
 function getSlideNotes(slideIndex) {
   const notes = currentLessonData.notes || '';
   if (!notes) return '';
   const slideNum = slideIndex + 1;
-  // Try to extract section "## Slide N"
   const regex = new RegExp(`##\\s*Slide\\s*${slideNum}[^\\n]*\\n([\\s\\S]*?)(?=##\\s*Slide\\s*|$)`, 'i');
   const match = notes.match(regex);
   if (match) return match[0];
-  // Fallback: divide notes equally
   const lines = notes.split('\n');
   const chunk = Math.ceil(lines.length / Math.max(presentationSlides.length, 1));
   return lines.slice(slideIndex * chunk, (slideIndex + 1) * chunk).join('\n') || notes.substring(0, 400);
@@ -383,20 +384,20 @@ function renderPresentationScreen() {
       <!-- TEACHER PANEL -->
       <div class="pres-teacher-panel">
         <div class="pres-teacher-header">
-          <span>🎓 Painel do Professor</span>
+          <span>✝️ Painel do Professor</span>
           <button class="pres-close-btn" onclick="closePresentationScreen()">✕</button>
         </div>
 
         ${slide.note ? `<div class="pres-slide-note"><div class="pres-notes-label">📌 Nota do slide</div><div class="pres-note-text">${escHtml(slide.note)}</div></div>` : ''}
 
-        <!-- NOTES / AI SEARCH TOGGLE -->
-        <div style="display:flex;gap:6px;margin-bottom:8px">
+        <!-- TABS -->
+        <div style="display:flex;gap:6px;margin:10px 14px 8px">
           <button id="tab-notes-btn" onclick="showTeacherTab('notes')"
             style="flex:1;padding:6px;border-radius:6px;border:1px solid rgba(99,102,241,.3);background:rgba(99,102,241,.15);color:#818cf8;font-size:11px;cursor:pointer;font-weight:600">
             📝 Anotações
           </button>
           <button id="tab-ai-btn" onclick="showTeacherTab('ai')"
-            style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text2);font-size:11px;cursor:pointer">
+            style="flex:1;padding:6px;border-radius:6px;border:1px solid #252836;background:none;color:#9ca3b8;font-size:11px;cursor:pointer">
             🔍 Pesquisa IA
           </button>
         </div>
@@ -407,22 +408,25 @@ function renderPresentationScreen() {
           <div class="pres-notes-content">${markdownToHtml(slideNotes)}</div>
         </div>
 
-        <!-- AI SEARCH TAB (hidden by default) -->
-        <div id="teacher-tab-ai" style="display:none;flex-direction:column;gap:8px;flex:1;overflow:hidden">
+        <!-- AI SEARCH TAB -->
+        <div id="teacher-tab-ai" style="display:none;flex-direction:column;gap:8px;flex:1;overflow:hidden;padding:10px 14px">
+          <p style="font-size:11px;color:#9ca3b8;margin:0">Digite uma pergunta teológica para aprofundar durante a aula:</p>
           <div class="pres-search-row">
             <input type="text" id="pres-search-input" class="pres-search-input"
-              placeholder="Pesquise para explicar melhor..."
+              placeholder="Ex: O que Calvino diz sobre..."
               onkeydown="if(event.key==='Enter') presSearch()">
-            <button class="pres-btn pres-btn-primary" onclick="presSearch()" style="background:${style.accent};font-size:11px">Buscar</button>
+            <button class="pres-btn pres-btn-primary" onclick="presSearch()" style="background:${style.accent};font-size:11px;padding:7px 12px">Buscar</button>
           </div>
-          <div id="pres-search-result" class="pres-search-result" style="flex:1;overflow-y:auto"></div>
-          <div id="pres-search-actions" style="display:none;gap:6px">
+          <div id="pres-search-result" class="pres-search-result" style="flex:1;overflow-y:auto;min-height:80px">
+            <span style="color:#636878;font-size:11px">A resposta aparecerá aqui...</span>
+          </div>
+          <div id="pres-search-actions" style="display:none;flex-direction:column;gap:6px">
             <button onclick="appendSearchToNotes()"
               style="width:100%;padding:7px;border-radius:6px;background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3);font-size:11px;cursor:pointer">
-              📎 Resumir e Anexar às Anotações
+              📎 Anexar às Anotações
             </button>
             <button onclick="showTeacherTab('notes')"
-              style="width:100%;padding:7px;border-radius:6px;background:none;color:var(--text2);border:1px solid var(--border);font-size:11px;cursor:pointer">
+              style="width:100%;padding:7px;border-radius:6px;background:none;color:#9ca3b8;border:1px solid #252836;font-size:11px;cursor:pointer">
               ← Voltar às Anotações
             </button>
           </div>
@@ -445,36 +449,39 @@ function showTeacherTab(tab) {
     notesTab.style.flexDirection = 'column';
     aiTab.style.display = 'none';
     if (notesBtn) { notesBtn.style.background = 'rgba(99,102,241,.15)'; notesBtn.style.color = '#818cf8'; notesBtn.style.border = '1px solid rgba(99,102,241,.3)'; }
-    if (aiBtn) { aiBtn.style.background = 'none'; aiBtn.style.color = 'var(--text2)'; aiBtn.style.border = '1px solid var(--border)'; }
+    if (aiBtn) { aiBtn.style.background = 'none'; aiBtn.style.color = '#9ca3b8'; aiBtn.style.border = '1px solid #252836'; }
   } else {
     notesTab.style.display = 'none';
     aiTab.style.display = 'flex';
     if (aiBtn) { aiBtn.style.background = 'rgba(99,102,241,.15)'; aiBtn.style.color = '#818cf8'; aiBtn.style.border = '1px solid rgba(99,102,241,.3)'; }
-    if (notesBtn) { notesBtn.style.background = 'none'; notesBtn.style.color = 'var(--text2)'; notesBtn.style.border = '1px solid var(--border)'; }
+    if (notesBtn) { notesBtn.style.background = 'none'; notesBtn.style.color = '#9ca3b8'; notesBtn.style.border = '1px solid #252836'; }
     setTimeout(() => document.getElementById('pres-search-input')?.focus(), 100);
   }
 }
 
 async function presSearch() {
-  const q = document.getElementById('pres-search-input')?.value.trim();
+  const input = document.getElementById('pres-search-input');
+  const q = input?.value.trim();
   if (!q) return;
   const r = document.getElementById('pres-search-result');
   const actions = document.getElementById('pres-search-actions');
   if (!r) return;
 
-  r.innerHTML = '<div style="color:var(--text2);font-size:12px;padding:8px">🤔 Buscando com IA...</div>';
+  r.innerHTML = '<div style="color:#9ca3b8;font-size:12px;padding:8px">🤔 Buscando com IA...</div>';
   if (actions) actions.style.display = 'none';
 
   try {
+    const slideTitle = presentationSlides[currentSlide]?.title || '';
     const result = await claudeAI(
-      `Explique de forma clara e objetiva para um professor usar em sala de aula: "${q}".
-       Seja direto, use exemplos práticos. Máximo 2 parágrafos curtos.`
+      `O professor está apresentando o slide "${slideTitle}" e perguntou: "${q}".
+       Responda de forma clara e objetiva para uso imediato em sala de aula no seminário.
+       Use referências bíblicas e teológicas relevantes. Máximo 3 parágrafos curtos.`,
+      SEMINARY_SYSTEM
     );
-    r.innerHTML = `<div style="font-size:12px;color:var(--text);line-height:1.6">${markdownToHtml(result)}</div>`;
-    if (actions) actions.style.display = 'flex';
-    if (actions) actions.style.flexDirection = 'column';
+    r.innerHTML = `<div style="font-size:12px;color:#e8eaf0;line-height:1.6">${markdownToHtml(result)}</div>`;
+    if (actions) { actions.style.display = 'flex'; actions.style.flexDirection = 'column'; }
   } catch (err) {
-    r.innerHTML = `<div style="color:var(--red);font-size:12px">Erro: ${err.message}</div>`;
+    r.innerHTML = `<div style="color:#f43f5e;font-size:12px">Erro: ${err.message}</div>`;
   }
 }
 
