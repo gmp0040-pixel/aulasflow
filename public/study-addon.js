@@ -23,6 +23,7 @@ async function openStudyScreen(lessonId, lessonTitle) {
           <span class="study-badge">Modo Estudo</span>
         </div>
         <div class="study-header-actions">
+          <button class="study-btn" onclick="toggleTheme()" id="study-theme-btn" title="Alternar tema" style="padding:6px 10px;font-size:16px">☀️</button>
           <button class="study-btn study-btn-present" onclick="startPresentationStudy()">📺 Apresentar</button>
         </div>
       </div>
@@ -130,17 +131,23 @@ async function searchTopic(topic) {
   showStudyLoading(`Pesquisando "${topic}" com IA...`);
   try {
     const content = await claudeAI(
-      `Faça uma pesquisa COMPLETA e DETALHADA sobre o tema teológico: "${topic}" para um seminário presbiteriano renovado.
-      
-      Estruture com:
-      ## 1. Introdução e Contexto Bíblico
-      ## 2. Fundamentos Teológicos Reformados
-      ## 3. Desenvolvimento Doutrinal
-      ## 4. Aplicações Práticas para o Ministério
-      ## 5. Perspectiva da Renovação dentro da Tradição Reformada
-      ## 6. Síntese e Conclusão
-      
-      Use referências bíblicas específicas. Cite teólogos reformados quando relevante.`,
+      `Faça uma pesquisa COMPLETA sobre o tema teológico: "${topic}" para um seminário presbiteriano renovado.
+
+REGRAS ANTI-REPETIÇÃO OBRIGATÓRIAS:
+- Cada parágrafo deve abordar um aspecto NOVO e DISTINTO
+- NUNCA repita o mesmo sujeito em parágrafos consecutivos
+- Varie perspectivas: bíblica, histórica, doutrinal, prática, pastoral
+- Se um conceito foi mencionado, não o repita — apenas conecte ou aprofunde
+
+Estruture com:
+## 1. Introdução e Contexto Bíblico
+## 2. Fundamentos Teológicos Reformados
+## 3. Desenvolvimento Doutrinal
+## 4. Aplicações Práticas para o Ministério
+## 5. Perspectiva Presbiteriana Renovada
+## 6. Síntese
+
+Use referências bíblicas específicas. Cite teólogos reformados quando relevante.`,
       SEMINARY_SYSTEM
     );
 
@@ -292,6 +299,8 @@ async function loadSavedStudyContent(lessonId) {
   } catch {}
 }
 
+let currentSlideTheme = localStorage.getItem('slideTheme') || 'dark';
+
 function startPresentationStudy() {
   if (currentLessonData.slides) {
     try { presentationSlides = JSON.parse(currentLessonData.slides).slides || []; } catch {}
@@ -310,6 +319,92 @@ function startPresentationStudy() {
   document.body.style.overflow = 'hidden';
 }
 
+function cycleSlideTheme() {
+  const themes = ['dark','minimal','modern','professional','light'];
+  const idx = themes.indexOf(currentSlideTheme);
+  currentSlideTheme = themes[(idx + 1) % themes.length];
+  localStorage.setItem('slideTheme', currentSlideTheme);
+  renderPresentationScreen();
+}
+
+function getSlideThemeStyles() {
+  const themes = {
+    dark: {
+      bg: '#050709',
+      slideBg: (accent) => `rgba(${hexToRgb(accent)},0.06)`,
+      text: '#e8eaf0',
+      text2: '#9ca3b8',
+      controlBg: 'rgba(15,18,25,0.97)',
+      controlBorder: '#252836',
+      panelBg: '#0f1219',
+      panelBorder: '#252836',
+      btnBg: 'rgba(255,255,255,0.05)',
+      btnColor: '#e8eaf0',
+      name: '🌑 Escuro'
+    },
+    minimal: {
+      bg: '#0d0f18',
+      slideBg: (accent) => 'transparent',
+      text: '#e8eaf0',
+      text2: '#636878',
+      controlBg: '#0d0f18',
+      controlBorder: '#1a1d2a',
+      panelBg: '#0d0f18',
+      panelBorder: '#1a1d2a',
+      btnBg: 'rgba(255,255,255,0.03)',
+      btnColor: '#9ca3b8',
+      name: '⚪ Minimalista'
+    },
+    modern: {
+      bg: 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)',
+      slideBg: (accent) => `rgba(${hexToRgb(accent)},0.1)`,
+      text: '#ffffff',
+      text2: '#c4c9e8',
+      controlBg: 'rgba(10,8,30,0.95)',
+      controlBorder: 'rgba(99,102,241,0.3)',
+      panelBg: 'rgba(15,12,40,0.95)',
+      panelBorder: 'rgba(99,102,241,0.2)',
+      btnBg: 'rgba(99,102,241,0.15)',
+      btnColor: '#c4c9e8',
+      name: '🟣 Moderno'
+    },
+    professional: {
+      bg: '#1a1f36',
+      slideBg: (accent) => `rgba(${hexToRgb(accent)},0.07)`,
+      text: '#e2e8f0',
+      text2: '#94a3b8',
+      controlBg: '#0f1322',
+      controlBorder: '#2d3748',
+      panelBg: '#111827',
+      panelBorder: '#2d3748',
+      btnBg: 'rgba(255,255,255,0.06)',
+      btnColor: '#e2e8f0',
+      name: '🔵 Profissional'
+    },
+    light: {
+      bg: '#f8f9fc',
+      slideBg: (accent) => `rgba(${hexToRgb(accent)},0.04)`,
+      text: '#1a1d2e',
+      text2: '#4a5068',
+      controlBg: '#ffffff',
+      controlBorder: '#e2e4ef',
+      panelBg: '#f0f2f8',
+      panelBorder: '#e2e4ef',
+      btnBg: 'rgba(0,0,0,0.04)',
+      btnColor: '#4a5068',
+      name: '☀️ Claro'
+    }
+  };
+  return themes[currentSlideTheme] || themes.dark;
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
 function getSlideNotes(slideIndex) {
   const notes = currentLessonData.notes || '';
   if (!notes) return '';
@@ -326,31 +421,37 @@ function renderPresentationScreen() {
   const p = document.getElementById('presentation-screen');
   const slide = presentationSlides[currentSlide];
   const total = presentationSlides.length;
+  const theme = getSlideThemeStyles();
 
   const typeColors = {
-    intro:      { accent: '#6366f1', bg: 'rgba(99,102,241,0.08)',  label: '📖 Introdução' },
-    content:    { accent: '#10b981', bg: 'rgba(16,185,129,0.06)',  label: '📚 Conteúdo' },
-    example:    { accent: '#f59e0b', bg: 'rgba(245,158,11,0.06)',  label: '💡 Exemplo' },
-    activity:   { accent: '#06b6d4', bg: 'rgba(6,182,212,0.06)',   label: '✏️ Atividade' },
-    summary:    { accent: '#a855f7', bg: 'rgba(168,85,247,0.06)',  label: '📋 Resumo' },
-    conclusion: { accent: '#ec4899', bg: 'rgba(236,72,153,0.06)',  label: '🏁 Conclusão' },
+    intro:      { accent: '#6366f1', label: '📖 Introdução' },
+    content:    { accent: '#10b981', label: '📚 Conteúdo' },
+    example:    { accent: '#f59e0b', label: '💡 Exemplo' },
+    activity:   { accent: '#06b6d4', label: '✏️ Atividade' },
+    summary:    { accent: '#a855f7', label: '📋 Resumo' },
+    conclusion: { accent: '#ec4899', label: '🏁 Conclusão' },
   };
-  const style = typeColors[slide.type] || typeColors.content;
+  const tc = typeColors[slide.type] || typeColors.content;
+  const style = { accent: tc.accent, bg: theme.slideBg(tc.accent), label: tc.label };
   const slideNotes = getSlideNotes(currentSlide);
+  const isBgGradient = theme.bg.startsWith('linear') || theme.bg.startsWith('radial');
+
+  // Apply background to the container
+  p.style.background = isBgGradient ? theme.bg : theme.bg;
 
   p.innerHTML = `
-    <div class="pres-layout">
+    <div class="pres-layout" style="background:${theme.bg}">
 
       <!-- SLIDE AREA -->
-      <div class="pres-slide-area">
+      <div class="pres-slide-area" style="background:${isBgGradient ? theme.bg : 'transparent'}">
         <div class="pres-slide" style="background:${style.bg};border-top:4px solid ${style.accent}">
           <div class="pres-slide-meta">
             <span class="pres-slide-type-badge" style="color:${style.accent};background:${style.bg}">${style.label}</span>
             <span class="pres-slide-num">${currentSlide + 1} / ${total}</span>
           </div>
 
-          ${slide.subtitle ? `<p class="pres-slide-subtitle">${escHtml(slide.subtitle)}</p>` : ''}
-          <h2 class="pres-slide-title" style="color:${style.accent}">${escHtml(slide.title)}</h2>
+          ${slide.subtitle ? `<p class="pres-slide-subtitle" style="color:${theme.text2}">${escHtml(slide.subtitle)}</p>` : ''}
+          <h2 class="pres-slide-title" style="color:${style.accent};text-shadow:${currentSlideTheme === "modern" ? "0 0 30px rgba(99,102,241,0.3)" : "none"}">${escHtml(slide.title)}</h2>
 
           ${slide.points && slide.points.length ? `
             <ul class="pres-slide-points">
@@ -360,7 +461,7 @@ function renderPresentationScreen() {
                 <li class="pres-point" style="animation-delay:${idx * 0.07}s">
                   <span class="pres-point-bullet" style="background:${style.accent}"></span>
                   <div class="pres-point-content">
-                    <span class="pres-point-text">${escHtml(point)}</span>
+                    <span class="pres-point-text" style="color:${theme.text}">${escHtml(point)}</span>
                     ${hasSub ? `<ul class="pres-subpoints">${slide.subpoints[point].map(sp => `<li>${escHtml(sp)}</li>`).join('')}</ul>` : ''}
                   </div>
                 </li>`;
@@ -371,21 +472,25 @@ function renderPresentationScreen() {
         </div>
 
         <!-- CONTROLS -->
-        <div class="pres-controls">
+        <div class="pres-controls" style="background:${theme.controlBg};border-top:1px solid ${theme.controlBorder}">
           <button class="pres-btn" style="background:rgba(244,63,94,.15);color:#f43f5e;border:1px solid rgba(244,63,94,.2)" onclick="closePresentationScreen()">✕ Sair</button>
-          <button class="pres-btn" onclick="prevSlideStudy()" ${currentSlide === 0 ? 'disabled' : ''}>← Anterior</button>
+          <button class="pres-btn" onclick="prevSlideStudy()" ${currentSlide === 0 ? 'disabled' : ''} style="background:${theme.btnBg};color:${theme.btnColor};border:1px solid ${theme.controlBorder}">← Anterior</button>
           <div class="pres-progress">
-            ${presentationSlides.map((_, i) => `<div class="pres-dot ${i === currentSlide ? 'active' : ''}" onclick="goToSlideStudy(${i})" style="${i === currentSlide ? 'background:' + style.accent : ''}"></div>`).join('')}
+            ${presentationSlides.map((_, i) => `<div class="pres-dot ${i === currentSlide ? 'active' : ''}" onclick="goToSlideStudy(${i})" style="${i === currentSlide ? 'background:' + style.accent : 'background:' + theme.controlBorder}"></div>`).join('')}
           </div>
           <button class="pres-btn pres-btn-primary" onclick="nextSlideStudy()" ${currentSlide === total - 1 ? 'disabled' : ''} style="background:${style.accent}">Próximo →</button>
+          <button class="pres-btn" onclick="cycleSlideTheme()" title="Mudar tema" style="background:${theme.btnBg};color:${theme.btnColor};border:1px solid ${theme.controlBorder};font-size:12px">${theme.name}</button>
         </div>
       </div>
 
       <!-- TEACHER PANEL -->
-      <div class="pres-teacher-panel">
-        <div class="pres-teacher-header">
+      <div class="pres-teacher-panel" style="background:${theme.panelBg};border-left:1px solid ${theme.panelBorder}">
+        <div class="pres-teacher-header" style="border-bottom:1px solid ${theme.panelBorder};color:${theme.text2}">
           <span>✝️ Painel do Professor</span>
-          <button class="pres-close-btn" onclick="closePresentationScreen()">✕</button>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button onclick="cycleSlideTheme()" title="Tema: ${theme.name}" style="background:none;border:1px solid ${theme.panelBorder};border-radius:6px;color:${theme.text2};font-size:11px;padding:2px 7px;cursor:pointer">${theme.name}</button>
+            <button class="pres-close-btn" onclick="closePresentationScreen()">✕</button>
+          </div>
         </div>
 
         ${slide.note ? `<div class="pres-slide-note"><div class="pres-notes-label">📌 Nota do slide</div><div class="pres-note-text">${escHtml(slide.note)}</div></div>` : ''}
@@ -403,17 +508,17 @@ function renderPresentationScreen() {
         </div>
 
         <!-- NOTES TAB -->
-        <div id="teacher-tab-notes" class="pres-notes-area">
+        <div id="teacher-tab-notes" class="pres-notes-area" style="background:${theme.panelBg}">
           <div class="pres-notes-label">Slide ${currentSlide + 1} — ${escHtml(slide.title)}</div>
-          <div class="pres-notes-content">${markdownToHtml(slideNotes)}</div>
+          <div class="pres-notes-content" style="color:${theme.text2}">${markdownToHtml(slideNotes)}</div>
         </div>
 
         <!-- AI SEARCH TAB -->
         <div id="teacher-tab-ai" style="display:none;flex-direction:column;gap:8px;flex:1;overflow:hidden;padding:10px 14px">
-          <p style="font-size:11px;color:#9ca3b8;margin:0">Digite uma pergunta teológica para aprofundar durante a aula:</p>
+          <p style="font-size:11px;color:#9ca3b8;margin:0">Pesquisa livre — pergunte qualquer coisa:</p>
           <div class="pres-search-row">
             <input type="text" id="pres-search-input" class="pres-search-input"
-              placeholder="Ex: O que Calvino diz sobre..."
+              placeholder="Digite qualquer pergunta ou tema..."
               onkeydown="if(event.key==='Enter') presSearch()">
             <button class="pres-btn pres-btn-primary" onclick="presSearch()" style="background:${style.accent};font-size:11px;padding:7px 12px">Buscar</button>
           </div>
@@ -471,13 +576,7 @@ async function presSearch() {
   if (actions) actions.style.display = 'none';
 
   try {
-    const slideTitle = presentationSlides[currentSlide]?.title || '';
-    const result = await claudeAI(
-      `O professor está apresentando o slide "${slideTitle}" e perguntou: "${q}".
-       Responda de forma clara e objetiva para uso imediato em sala de aula no seminário.
-       Use referências bíblicas e teológicas relevantes. Máximo 3 parágrafos curtos.`,
-      SEMINARY_SYSTEM
-    );
+    const result = await claudeAI(q, SEMINARY_SYSTEM);
     r.innerHTML = `<div style="font-size:12px;color:#e8eaf0;line-height:1.6">${markdownToHtml(result)}</div>`;
     if (actions) { actions.style.display = 'flex'; actions.style.flexDirection = 'column'; }
   } catch (err) {
@@ -531,8 +630,13 @@ function hideStudyLoading() {
 document.addEventListener('keydown', (e) => {
   const p = document.getElementById('presentation-screen');
   if (p && p.style.display === 'flex') {
-    if (e.key === 'ArrowRight' || e.key === ' ') nextSlideStudy();
-    if (e.key === 'ArrowLeft') prevSlideStudy();
+    // Não interceptar teclas quando o usuário estiver digitando em inputs/textareas
+    const active = document.activeElement;
+    const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
+    if (isTyping) return;
+
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlideStudy(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlideStudy(); }
     if (e.key === 'Escape') closePresentationScreen();
   }
 });
