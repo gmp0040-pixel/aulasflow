@@ -432,10 +432,10 @@ async function openSubject(subjectId, subjectName) {
   showPage('subject-detail', subjectName);
   
   document.getElementById('subject-detail-actions').innerHTML = `
+    <button class="btn btn-sm btn-ghost" onclick="showPage('subjects')">← Voltar</button>
     <button class="btn btn-sm btn-primary" onclick="openModal('add-lesson-modal')">+ Nova Aula</button>
     <button class="btn btn-sm btn-ghost" style="background:rgba(99,102,241,0.1);color:var(--accent2)" onclick="openExamModal('${subjectId}')">🧪 Criar Prova</button>
     <button class="btn btn-sm btn-ghost" style="background:rgba(168,85,247,0.1);color:var(--purple)" onclick="openAssignmentModal('${subjectId}')">📄 Criar Trabalho</button>
-    <button class="btn btn-sm btn-ghost" onclick="showPage('subjects')">← Voltar</button>
   `;
   
   switchSubjectTab('lessons');

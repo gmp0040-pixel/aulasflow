@@ -471,9 +471,13 @@ function renderPresentationScreen() {
           ${slide.highlight ? `<div class="pres-highlight" style="border-color:${style.accent};color:${style.accent}">✨ ${escHtml(slide.highlight)}</div>` : ''}
         </div>
 
+        <!-- MOBILE PANEL TOGGLE -->
+        <button id="pres-panel-toggle-btn" class="pres-panel-toggle" onclick="toggleMobilePanel()" title="Painel do Professor">📝</button>
+
         <!-- CONTROLS -->
         <div class="pres-controls" style="background:${theme.controlBg};border-top:1px solid ${theme.controlBorder}">
           <button class="pres-btn" style="background:rgba(244,63,94,.15);color:#f43f5e;border:1px solid rgba(244,63,94,.2)" onclick="closePresentationScreen()">✕ Sair</button>
+          <button id="pres-hide-btn" class="pres-btn" onclick="toggleHideControls()" title="Ocultar controles da tela" style="background:${theme.btnBg};color:${theme.btnColor};border:1px solid ${theme.controlBorder};font-size:13px">🙈</button>
           <button class="pres-btn" onclick="prevSlideStudy()" ${currentSlide === 0 ? 'disabled' : ''} style="background:${theme.btnBg};color:${theme.btnColor};border:1px solid ${theme.controlBorder}">← Anterior</button>
           <div class="pres-progress">
             ${presentationSlides.map((_, i) => `<div class="pres-dot ${i === currentSlide ? 'active' : ''}" onclick="goToSlideStudy(${i})" style="${i === currentSlide ? 'background:' + style.accent : 'background:' + theme.controlBorder}"></div>`).join('')}
@@ -616,6 +620,52 @@ function closePresentationScreen() {
   const p = document.getElementById('presentation-screen');
   if (p) p.style.display = 'none';
   document.body.style.overflow = '';
+  if (_autoHideTimer) clearTimeout(_autoHideTimer);
+}
+
+let _controlsHidden = false;
+let _autoHideTimer = null;
+
+function toggleHideControls() {
+  _controlsHidden = !_controlsHidden;
+  const p = document.getElementById('presentation-screen');
+  const btn = document.getElementById('pres-hide-btn');
+  if (!p) return;
+  if (_controlsHidden) {
+    p.classList.add('pres-controls-hidden');
+    if (btn) { btn.textContent = '👁️'; btn.title = 'Mostrar controles'; }
+    // Auto-show on mouse/touch
+    p.addEventListener('mousemove', _showControlsTemp);
+    p.addEventListener('touchstart', _showControlsTemp);
+  } else {
+    p.classList.remove('pres-controls-hidden');
+    if (btn) { btn.textContent = '🙈'; btn.title = 'Ocultar controles da tela'; }
+    p.removeEventListener('mousemove', _showControlsTemp);
+    p.removeEventListener('touchstart', _showControlsTemp);
+  }
+}
+
+function _showControlsTemp() {
+  const controls = document.querySelector('.pres-controls');
+  if (!controls) return;
+  controls.style.opacity = '1';
+  controls.style.pointerEvents = 'auto';
+  if (_autoHideTimer) clearTimeout(_autoHideTimer);
+  _autoHideTimer = setTimeout(() => {
+    if (_controlsHidden) {
+      controls.style.opacity = '0';
+      controls.style.pointerEvents = 'none';
+    }
+  }, 3000);
+}
+
+function toggleMobilePanel() {
+  const panel = document.querySelector('.pres-teacher-panel');
+  const btn = document.getElementById('pres-panel-toggle-btn');
+  if (!panel) return;
+  const isOpen = panel.classList.contains('mobile-open');
+  panel.classList.toggle('mobile-open', !isOpen);
+  if (btn) btn.textContent = isOpen ? '📝' : '✕';
 }
 
 function showStudyLoading(text) {
