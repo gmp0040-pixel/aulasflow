@@ -33,7 +33,7 @@ async function claudeAI(prompt, systemPrompt, max_tokens) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       prompt,
-      system: systemPrompt || 'Você é um assistente educacional especializado em teologia reformada e presbiteriana renovada, criando conteúdo pedagógico de alta qualidade em português brasileiro para um seminário teológico presbiteriano renovado. Todo conteúdo deve ser fundamentado nas Escrituras Sagradas, alinhado com a fé reformada e presbiteriana, considerando a abertura à renovação e ao mover do Espírito Santo dentro dos limites da sã doutrina reformada. Use referências bíblicas relevantes, cite teólogos reformados quando apropriado (como Calvino, Berkhof, Sproul, Kuyper, etc.), e mantenha linguagem teológica adequada para formação ministerial. Seja detalhado, preciso e didático.',
+      system: systemPrompt || 'Você é um professor e teólogo reformado de alto nível, especialista em criar conteúdo pedagógico excepcional em português brasileiro para formação ministerial em seminário teológico. Seu conteúdo é fundamentado exclusivamente nas Escrituras Sagradas. Cite teólogos reformados quando relevante: Calvino, Berkhof, Bavinck, Sproul, Kuyper, Hodge, Frame, Horton, Beeke. REGRAS: 1) NUNCA repita o mesmo sujeito em frases consecutivas; 2) Cada ponto traz informação NOVA e DISTINTA; 3) Varie perspectivas: bíblica, histórica, doutrinal, prática, pastoral; 4) Use referências bíblicas ESPECÍFICAS com capítulo e versículo; 5) Frases COMPLETAS e INFORMATIVAS — nunca palavras soltas.',
       max_tokens: max_tokens || 4000
     })
   });
@@ -432,10 +432,10 @@ async function openSubject(subjectId, subjectName) {
   showPage('subject-detail', subjectName);
   
   document.getElementById('subject-detail-actions').innerHTML = `
-    <button class="btn btn-sm btn-ghost" onclick="showPage('subjects')">← Voltar</button>
     <button class="btn btn-sm btn-primary" onclick="openModal('add-lesson-modal')">+ Nova Aula</button>
     <button class="btn btn-sm btn-ghost" style="background:rgba(99,102,241,0.1);color:var(--accent2)" onclick="openExamModal('${subjectId}')">🧪 Criar Prova</button>
     <button class="btn btn-sm btn-ghost" style="background:rgba(168,85,247,0.1);color:var(--purple)" onclick="openAssignmentModal('${subjectId}')">📄 Criar Trabalho</button>
+    <button class="btn btn-sm btn-ghost" onclick="showPage('subjects')">← Voltar</button>
   `;
   
   switchSubjectTab('lessons');
@@ -817,7 +817,6 @@ function renderLessonEditor() {
     <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
       <button class="btn btn-sm btn-ghost" onclick="showPage('subject-detail')">← Voltar</button>
       <h2 style="font-family:Montserrat,sans-serif;font-size:18px;font-weight:700;flex:1">${escHtml(data.title)}</h2>
-      <button class="btn btn-sm btn-ghost" onclick="toggleTheme()" id="editor-theme-btn" title="Alternar tema" style="font-size:16px;padding:6px 10px">${document.body.classList.contains('light-mode') ? '🌙' : '☀️'}</button>
       ${isSaved ? '<button class="btn btn-sm btn-primary" onclick="startPresentation()">📡 Apresentar</button>' : ''}
     </div>
     
@@ -831,14 +830,6 @@ function renderLessonEditor() {
   renderLessonStep(activeStep);
 }
 
-function saveEditedContent(field) {
-  const ta = document.getElementById('edit-' + field);
-  if (!ta) return;
-  currentLessonData[field] = ta.value;
-  saveLessonData();
-  toast('✅ Conteúdo salvo!', 'success');
-}
-
 function renderLessonStep(step) {
   const data = currentLessonData;
   const container = document.getElementById('lesson-step-content');
@@ -850,13 +841,10 @@ function renderLessonStep(step) {
         <h3 style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:700">🔍 Pesquisa Completa</h3>
         <button class="btn btn-sm btn-ghost" onclick="showPage('subject-detail')">✕ Cancelar e Voltar</button>
       </div>
-      <p style="color:var(--text2);font-size:14px;margin-bottom:8px">A IA pesquisa e gera conteúdo teológico completo. Você pode editar o resultado diretamente.</p>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:16px">A IA pesquisa e gera conteúdo completo sobre o tema da aula.</p>
+      <div id="research-content" class="ai-content-area" style="display:${data.research ? 'block' : 'none'}">${markdownToHtml(data.research || '')}</div>
       <div id="research-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Pesquisando com IA...</span></div>
-      ${data.research ? `
-        <textarea id="edit-research" style="width:100%;min-height:320px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;line-height:1.7;padding:14px;resize:vertical;font-family:var(--font-main);outline:none" oninput="currentLessonData.research=this.value">${(data.research||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
-        <div style="display:flex;justify-content:flex-end;margin-top:4px"><button class="btn btn-sm btn-secondary" onclick="saveEditedContent('research')">💾 Salvar edição</button></div>
-      ` : '<div id="research-content" style="display:none"></div>'}
-      <div class="ai-action-bar" style="margin-top:12px">
+      <div class="ai-action-bar" style="margin-top:16px">
         <button class="btn btn-primary" id="research-btn" onclick="aiResearch()">🤖 ${data.research ? 'Pesquisar Novamente' : 'Pesquisar com IA'}</button>
         ${data.research ? '<button class="btn btn-secondary" id="expand-btn" onclick="expandResearch()">📈 Expandir +20%</button>' : ''}
         ${data.research ? '<button class="btn btn-success" onclick="saveStepAndAdvance(1)">💾 Salvar e Avançar →</button>' : ''}
@@ -869,12 +857,9 @@ function renderLessonStep(step) {
         <h3 style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:700">📋 Estrutura da Aula</h3>
         <button class="btn btn-sm btn-ghost" onclick="showPage('subject-detail')">✕ Cancelar e Voltar</button>
       </div>
+      <div id="structure-content" class="ai-content-area" style="display:${data.structure ? 'block' : 'none'}">${markdownToHtml(data.structure || '')}</div>
       <div id="structure-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Estruturando...</span></div>
-      ${data.structure ? `
-        <textarea id="edit-structure" style="width:100%;min-height:320px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;line-height:1.7;padding:14px;resize:vertical;font-family:var(--font-main);outline:none" oninput="currentLessonData.structure=this.value">${(data.structure||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
-        <div style="display:flex;justify-content:flex-end;margin-top:4px"><button class="btn btn-sm btn-secondary" onclick="saveEditedContent('structure')">💾 Salvar edição</button></div>
-      ` : '<div id="structure-content" style="display:none"></div>'}
-      <div class="ai-action-bar" style="margin-top:12px">
+      <div class="ai-action-bar" style="margin-top:16px">
         <button class="btn btn-ghost" onclick="renderLessonStep(1)">← Voltar</button>
         <button class="btn btn-primary" onclick="aiStructure()">🤖 ${data.structure ? 'Reestruturar' : 'Estruturar com IA'}</button>
         ${data.structure ? '<button class="btn btn-success" onclick="saveStepAndAdvance(2)">💾 Salvar e Avançar →</button>' : ''}
@@ -902,15 +887,8 @@ function renderLessonStep(step) {
         <button class="btn btn-sm btn-ghost" onclick="showPage('subject-detail')">✕ Cancelar e Voltar</button>
       </div>
       <div id="slides-preview">${slidesPreview}</div>
-      ${data.slides ? `
-        <details style="margin-top:8px">
-          <summary style="cursor:pointer;font-size:12px;color:var(--text2);padding:6px 0">✏️ Editar JSON dos slides (avançado)</summary>
-          <textarea id="edit-slides" style="width:100%;min-height:200px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;line-height:1.5;padding:12px;resize:vertical;font-family:monospace;outline:none;margin-top:8px" oninput="currentLessonData.slides=this.value">${(data.slides||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
-          <div style="display:flex;justify-content:flex-end;margin-top:4px"><button class="btn btn-sm btn-secondary" onclick="saveEditedContent('slides')">💾 Salvar edição</button></div>
-        </details>
-      ` : ''}
       <div id="slides-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Criando slides completos...</span></div>
-      <div class="ai-action-bar" style="margin-top:12px">
+      <div class="ai-action-bar" style="margin-top:16px">
         <button class="btn btn-ghost" onclick="renderLessonStep(2)">← Voltar</button>
         <button class="btn btn-primary" onclick="aiSlides()">🤖 ${data.slides ? 'Regerar Slides' : 'Criar Slides com IA'}</button>
         ${data.slides ? '<button class="btn btn-success" onclick="saveStepAndAdvance(3)">💾 Salvar e Avançar →</button>' : ''}
@@ -923,13 +901,10 @@ function renderLessonStep(step) {
         <h3 style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:700">🗒️ Anotações do Professor</h3>
         <button class="btn btn-sm btn-ghost" onclick="showPage('subject-detail')">✕ Cancelar e Voltar</button>
       </div>
-      <p style="color:var(--text2);font-size:13px;margin-bottom:8px">Anotações sincronizadas com os slides. Edite diretamente se quiser personalizar.</p>
+      <p style="color:var(--text2);font-size:13px;margin-bottom:12px">Anotações sincronizadas com os slides — um tópico por ponto.</p>
+      <div id="notes-preview" class="ai-content-area" style="display:${data.notes ? 'block' : 'none'}">${markdownToHtml(data.notes || '')}</div>
       <div id="notes-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Gerando anotações sincronizadas...</span></div>
-      ${data.notes ? `
-        <textarea id="edit-notes" style="width:100%;min-height:320px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;line-height:1.7;padding:14px;resize:vertical;font-family:var(--font-main);outline:none" oninput="currentLessonData.notes=this.value">${(data.notes||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
-        <div style="display:flex;justify-content:flex-end;margin-top:4px"><button class="btn btn-sm btn-secondary" onclick="saveEditedContent('notes')">💾 Salvar edição</button></div>
-      ` : '<div id="notes-preview" style="display:none"></div>'}
-      <div class="ai-action-bar" style="margin-top:12px">
+      <div class="ai-action-bar" style="margin-top:16px">
         <button class="btn btn-ghost" onclick="renderLessonStep(3)">← Voltar</button>
         <button class="btn btn-primary" onclick="aiNotes('moderate')">🤖 ${data.notes ? 'Regerar' : 'Gerar Anotações'}</button>
         ${data.notes ? '<button class="btn btn-success" onclick="saveStepAndAdvance(4)">💾 Salvar e Avançar →</button>' : ''}
@@ -980,24 +955,22 @@ async function aiResearch() {
   
   try {
     const result = await claudeAI(
-      `Faça uma pesquisa COMPLETA e DETALHADA sobre o tema teológico: "\${currentLessonData.title}" para um seminário presbiteriano renovado.
+      `Faça uma pesquisa COMPLETA e DETALHADA sobre o tema teológico: "${currentLessonData.title}" para um seminário teológico reformado.
 
 REGRAS OBRIGATÓRIAS ANTI-REPETIÇÃO:
-- NUNCA repita o mesmo sujeito em itens consecutivos (ex: não comece 3 frases com o mesmo termo)
-- Cada ponto deve trazer uma informação NOVA e DISTINTA do anterior
-- Varie a estrutura das frases: use sujeitos diferentes, verbos variados, perspectivas distintas
-- Se um conceito já foi mencionado, não o repita — apenas aprofunde ou conecte com outro
+- NUNCA repita o mesmo sujeito em itens consecutivos
+- Cada ponto traz informação NOVA e DISTINTA — sem repetições
+- Varie perspectivas: bíblica, histórica, doutrinal, prática, pastoral
+- Referências bíblicas ESPECÍFICAS com capítulo e versículo (ex: Rm 8.28-30)
 
 Estruture com:
 ## 1. Introdução e Contexto Bíblico
 ## 2. Fundamentos Teológicos Reformados
-## 3. Desenvolvimento Doutrinal
-## 4. Aplicações Práticas para o Ministério
-## 5. Perspectiva Presbiteriana Renovada
-## 6. Síntese
-
-Use referências bíblicas específicas. Cite teólogos reformados quando relevante.`,
-      'Você é especialista em teologia reformada e presbiteriana renovada. Crie conteúdo teológico rico, variado e sem repetições, fundamentado nas Escrituras. Nunca repita o mesmo sujeito em pontos consecutivos.'
+## 3. Desenvolvimento Doutrinal e Histórico
+## 4. Perspectivas dos Teólogos Reformados (cite Calvino, Bavinck, Berkhof, Sproul quando relevante)
+## 5. Aplicações Práticas para o Ministério
+## 6. Síntese e Conclusão`,
+      'Você é especialista em teologia reformada. Crie conteúdo rico, variado e sem repetições. Nunca repita o mesmo sujeito em pontos consecutivos.'
     );
     
     currentLessonData.research = result;
@@ -1022,21 +995,20 @@ async function aiStructure() {
   
   try {
     const result = await claudeAI(
-      `Com base na pesquisa sobre "\${currentLessonData.title}", crie uma estrutura pedagógica para uma aula de seminário presbiteriano renovado.
-      
-Pesquisa: \${currentLessonData.research}
+      `Com base na pesquisa sobre "${currentLessonData.title}", crie uma estrutura pedagógica completa para uma aula de seminário teológico reformado.
+
+Pesquisa: ${currentLessonData.research}
 
 REGRAS ANTI-REPETIÇÃO:
-- Cada objetivo de aprendizagem deve ser ÚNICO e diferente dos demais
-- Cada tópico deve cobrir um aspecto distinto — nunca repita conceitos
-- Varie a linguagem: não comece itens consecutivos com as mesmas palavras
+- Cada objetivo único e mensurável — sem repetir conceitos
+- Cada tópico cobre ângulo DISTINTO com referências bíblicas
+- Não inicie itens consecutivos com as mesmas palavras
 
-Estrutura:
-## Objetivos de Aprendizagem (5-7 objetivos únicos e distintos)
-## Divisão Temporal (com tempo estimado para cada parte)
-## Tópicos Principais (cada um com subtópicos únicos)
-## Atividades e Dinâmicas (para engajar os alunos do seminário)
-## Avaliação da Aprendizagem`
+## Objetivos de Aprendizagem (5-7 objetivos únicos e mensuráveis)
+## Divisão Temporal da Aula (tempo estimado por parte)
+## Tópicos Principais (com subtópicos únicos e referências bíblicas)
+## Atividades e Dinâmicas (para engajamento ministerial)
+## Avaliação da Aprendizagem (como verificar compreensão)`
     );
     
     currentLessonData.structure = result;
@@ -1060,37 +1032,37 @@ async function aiSlides() {
   
   try {
     const result = await claudeJSON(
-      `Crie slides COMPLETOS para aula teológica sobre "\${currentLessonData.title}" em seminário presbiteriano renovado.
-      
-Conteúdo base: \${(currentLessonData.research || '').substring(0, 3000)}
+      `Crie slides COMPLETOS para aula teológica sobre "${currentLessonData.title}" em seminário teológico reformado.
 
-REGRAS OBRIGATÓRIAS ANTI-REPETIÇÃO:
-- Cada point deve ser ÚNICO — nunca comece dois points consecutivos com o mesmo sujeito
-- NÃO repita conceitos entre slides diferentes
-- Cada slide deve cobrir um aspecto DISTINTO do tema
-- Varie a estrutura: use sujeitos, verbos e perspectivas diferentes em cada point
-- Se um conceito aparece em um slide, não o repita em outro
+Conteúdo base: ${(currentLessonData.research || '').substring(0, 3000)}
+
+REGRAS DE QUALIDADE MÁXIMA:
+- Cada point ÚNICO — nunca dois points consecutivos com o mesmo sujeito
+- NÃO repita conceitos entre slides — cada slide cobre aspecto DISTINTO
+- Points são frases COMPLETAS e INFORMATIVAS — nunca palavras soltas
+- Inclua referências bíblicas específicas (ex: Rm 8.28-30) quando relevante
+- Varie perspectivas: bíblica, histórica, doutrinal, prática, pastoral
 
 Retorne APENAS JSON válido:
 {
   "slides": [
     {
       "type": "intro",
-      "title": "Título do slide",
-      "subtitle": "Subtítulo opcional",
-      "points": ["frase completa única 1", "frase completamente diferente 2", ...],
-      "subpoints": { "ponto": ["detalhe a", "detalhe b"] },
-      "note": "Orientação exclusiva para o professor"
+      "title": "Título claro e direto",
+      "subtitle": "Subtítulo contextual",
+      "points": ["frase completa informativa 1", "frase diferente com nova informação 2"],
+      "subpoints": { "ponto chave": ["detalhe a", "detalhe b"] },
+      "note": "Orientação pastoral exclusiva para o professor"
     }
   ]
 }
 
-REGRAS:
+ESTRUTURA:
 - 10 a 14 slides. Tipos: intro, content, example, activity, summary, conclusion
-- 4 a 6 points por slide, cada um DIFERENTE dos demais
-- Inclua referências bíblicas nos points quando relevante
-- Inclua slide de atividade/discussão para os alunos do seminário`,
-      'Retorne APENAS JSON válido. Nunca repita o mesmo sujeito em points consecutivos. Contexto: seminário presbiteriano renovado.'
+- 4 a 6 points únicos por slide
+- Inclua slide de atividade/discussão para os alunos
+- Último slide: resumo com aplicação ministerial`,
+      'Retorne APENAS JSON válido. Nunca repita o mesmo sujeito em points consecutivos.'
     );
     
     currentLessonData.slides = JSON.stringify(result);
@@ -1149,9 +1121,9 @@ FORMATO EXATO (siga à risca):
 SLIDES:
 ${slideSummary}
 
-NÃO repita frases entre tópicos. Cada número deve trazer informação NOVA e DISTINTA.
+NÃO repita frases entre tópicos. Cada número traz informação NOVA e DISTINTA.
 NUNCA comece dois itens consecutivos com o mesmo sujeito ou verbo.
-Varie a perspectiva: teológica, prática, bíblica, histórica, aplicada ao ministério.`
+Varie perspectivas: teológica, prática, bíblica, histórica, pastoral.`
     );
     
     currentLessonData.notes = result;
@@ -1256,11 +1228,8 @@ function exitPresentation() { closePresentationScreen(); }
 document.addEventListener('keydown', (e) => {
   const p = document.getElementById('presentation-screen');
   if (!p || p.style.display !== 'flex') return;
-  const active = document.activeElement;
-  const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
-  if (isTyping) return;
-  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlideStudy(); }
-  if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlideStudy(); }
+  if (e.key === 'ArrowRight' || e.key === ' ') nextSlideStudy();
+  if (e.key === 'ArrowLeft') prevSlideStudy();
   if (e.key === 'Escape') closePresentationScreen();
 });
 
@@ -1864,16 +1833,18 @@ async function expandResearch() {
   
   try {
     const result = await claudeAI(
-      `Expanda o seguinte conteúdo educacional sobre "${currentLessonData.title}" em aproximadamente 20%, adicionando:
-      - Mais argumentos e evidências para os pontos já existentes
-      - Exemplos adicionais mais detalhados
-      - Contexto histórico ou científico extra
-      - Conexões com outros temas relevantes
-      
-      CONTEÚDO ATUAL:
-      ${currentLessonData.research}
-      
-      Mantenha a estrutura e os títulos originais, apenas enriqueça cada seção com mais conteúdo.`
+      `Expanda o conteúdo teológico sobre "${currentLessonData.title}" em aproximadamente 20%, adicionando:
+- Argumentos bíblicos adicionais com referências específicas
+- Citações de teólogos reformados relevantes (Calvino, Bavinck, Berkhof, Sproul, Kuyper)
+- Contexto histórico-doutrinal que enriqueça a compreensão
+- Conexões com temas teológicos relacionados
+
+REGRA: Não repita informações já presentes — apenas enriqueça e aprofunde.
+
+CONTEÚDO ATUAL:
+${currentLessonData.research}
+
+Mantenha a estrutura e os títulos originais.`
     );
     
     currentLessonData.research = result;
@@ -1894,15 +1865,14 @@ async function expandResearch() {
 // ========================
 function toggleTheme() {
   const body = document.body;
+  const btn = document.getElementById('theme-btn');
   body.classList.toggle('light-mode');
   const isLight = body.classList.contains('light-mode');
-  const icon = isLight ? '🌙' : '☀️';
-  const title = isLight ? 'Mudar para Modo Escuro' : 'Mudar para Modo Claro';
-  // Update all theme buttons
-  ['theme-btn','editor-theme-btn','study-theme-btn'].forEach(id => {
-    const btn = document.getElementById(id);
-    if (btn) { btn.textContent = icon; btn.title = title; }
-  });
+  // Light mode = show moon (to switch to dark), Dark mode = show sun (to switch to light)
+  if (btn) {
+    btn.textContent = isLight ? '🌙' : '☀️';
+    btn.title = isLight ? 'Mudar para Modo Escuro' : 'Mudar para Modo Claro';
+  }
   localStorage.setItem('theme', isLight ? 'light' : 'dark');
 }
 
