@@ -40,7 +40,7 @@ FORMATO:
         'Authorization': `Bearer ${GROQ_KEY}`
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         max_tokens: max_tokens || 4000,
         temperature: 0.7,
         messages: [
