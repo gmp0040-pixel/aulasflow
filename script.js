@@ -845,7 +845,8 @@ function renderLessonStep(step) {
       <div id="research-content" class="ai-content-area" style="display:${data.research ? 'block' : 'none'}">${markdownToHtml(data.research || '')}</div>
       <div id="research-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Pesquisando com IA...</span></div>
       <div class="ai-action-bar" style="margin-top:16px">
-        <button class="btn btn-primary" id="research-btn" onclick="aiResearch()">🤖 ${data.research ? 'Pesquisar Novamente' : 'Pesquisar com IA'}</button>
+        <button class="btn btn-ghost" onclick="cancelLesson()">✕ Cancelar</button>
+        <button class="btn btn-primary" id="research-btn" onclick="aiResearch(false)">🤖 ${data.research ? 'Pesquisar Novamente' : 'Pesquisar com IA'}</button>
         ${data.research ? '<button class="btn btn-secondary" id="expand-btn" onclick="expandResearch()">📈 Expandir +20%</button>' : ''}
         ${data.research ? '<button class="btn btn-success" onclick="saveStepAndAdvance(1)">💾 Salvar e Avançar →</button>' : ''}
       </div>`;
@@ -944,18 +945,28 @@ async function saveStepAndAdvance(currentStep) {
 // ========================
 // AI FUNCTIONS (Claude)
 // ========================
-async function aiResearch() {
+async function aiResearch(isRetry = false) {
   const btn = document.getElementById('research-btn');
   const loading = document.getElementById('research-loading');
   const content = document.getElementById('research-content');
   
-  btn.disabled = true;
-  loading.style.display = 'flex';
-  content.style.display = 'none';
+  if (btn) btn.disabled = true;
+  if (loading) loading.style.display = 'flex';
+  if (content) content.style.display = 'none';
+
+  // Para "Pesquisar Novamente", usa angulo diferente para nao repetir
+  const retryExtra = isRetry || currentLessonData.research ? `
+ATENÇÃO — NOVA PESQUISA: Este é um segundo pedido sobre o mesmo tema. 
+Você DEVE abordar o tema de um ângulo COMPLETAMENTE DIFERENTE da pesquisa anterior.
+- Use teólogos diferentes dos que já foram citados
+- Explore aspectos históricos, contextuais ou aplicados que não foram mencionados antes
+- Priorize referências bíblicas de livros diferentes
+- Estruture de forma distinta — não repita a mesma sequência de seções` : '';
   
   try {
     const result = await claudeAI(
       `Faça uma pesquisa COMPLETA e DETALHADA sobre o tema teológico: "${currentLessonData.title}" para um seminário teológico reformado.
+${retryExtra}
 
 REGRAS OBRIGATÓRIAS ANTI-REPETIÇÃO:
 - NUNCA repita o mesmo sujeito em itens consecutivos
@@ -975,16 +986,22 @@ Estruture com:
     
     currentLessonData.research = result;
     await saveLessonData();
-    content.innerHTML = markdownToHtml(result);
-    content.style.display = 'block';
+    if (content) { content.innerHTML = markdownToHtml(result); content.style.display = 'block'; }
     renderLessonStep(1);
-    toast('Pesquisa concluída!', 'success');
+    toast(isRetry ? 'Nova pesquisa concluída!' : 'Pesquisa concluída!', 'success');
   } catch (err) {
     toast('Erro: ' + err.message, 'error');
   } finally {
-    btn.disabled = false;
-    loading.style.display = 'none';
+    if (btn) btn.disabled = false;
+    if (loading) loading.style.display = 'none';
   }
+}
+
+function cancelLesson() {
+  if (currentLessonData.research || currentLessonData.slides) {
+    if (!confirm('Deseja sair? O progresso salvo será mantido.')) return;
+  }
+  showPage('subject-detail');
 }
 
 async function aiStructure() {
@@ -1828,8 +1845,9 @@ async function expandResearch() {
   const loading = document.getElementById('research-loading');
   const content = document.getElementById('research-content');
   
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Expandindo...'; }
-  if (loading) loading.style.display = 'flex';
+  if (!btn || !loading) return toast('Erro: recarregue a página', 'error');
+  btn.disabled = true; btn.textContent = '⏳ Expandindo...';
+  loading.style.display = 'flex';
   
   try {
     const result = await claudeAI(
