@@ -965,23 +965,8 @@ Você DEVE abordar o tema de um ângulo COMPLETAMENTE DIFERENTE da pesquisa ante
   
   try {
     const result = await claudeAI(
-      `Faça uma pesquisa COMPLETA e DETALHADA sobre o tema teológico: "${currentLessonData.title}" para um seminário teológico reformado.
-${retryExtra}
-
-REGRAS OBRIGATÓRIAS ANTI-REPETIÇÃO:
-- NUNCA repita o mesmo sujeito em itens consecutivos
-- Cada ponto traz informação NOVA e DISTINTA — sem repetições
-- Varie perspectivas: bíblica, histórica, doutrinal, prática, pastoral
-- Referências bíblicas ESPECÍFICAS com capítulo e versículo (ex: Rm 8.28-30)
-
-Estruture com:
-## 1. Introdução e Contexto Bíblico
-## 2. Fundamentos Teológicos Reformados
-## 3. Desenvolvimento Doutrinal e Histórico
-## 4. Perspectivas dos Teólogos Reformados (cite Calvino, Bavinck, Berkhof, Sproul quando relevante)
-## 5. Aplicações Práticas para o Ministério
-## 6. Síntese e Conclusão`,
-      'Você é especialista em teologia reformada. Crie conteúdo rico, variado e sem repetições. Nunca repita o mesmo sujeito em pontos consecutivos.'
+      `Crie uma aula completa sobre: "${currentLessonData.title}".${retryExtra ? '\n\nATENÇÃO: Esta é uma nova pesquisa — aborde o tema de um ângulo diferente da anterior, usando outros autores e referências bíblicas distintas.' : ''}`,
+      null
     );
     
     currentLessonData.research = result;
@@ -1012,20 +997,8 @@ async function aiStructure() {
   
   try {
     const result = await claudeAI(
-      `Com base na pesquisa sobre "${currentLessonData.title}", crie uma estrutura pedagógica completa para uma aula de seminário teológico reformado.
-
-Pesquisa: ${currentLessonData.research}
-
-REGRAS ANTI-REPETIÇÃO:
-- Cada objetivo único e mensurável — sem repetir conceitos
-- Cada tópico cobre ângulo DISTINTO com referências bíblicas
-- Não inicie itens consecutivos com as mesmas palavras
-
-## Objetivos de Aprendizagem (5-7 objetivos únicos e mensuráveis)
-## Divisão Temporal da Aula (tempo estimado por parte)
-## Tópicos Principais (com subtópicos únicos e referências bíblicas)
-## Atividades e Dinâmicas (para engajamento ministerial)
-## Avaliação da Aprendizagem (como verificar compreensão)`
+      `Com base nesta pesquisa sobre "${currentLessonData.title}", crie um plano de aula estruturado com: objetivos de aprendizagem, divisão temporal, tópicos principais, atividades e avaliação.\n\nPesquisa:\n${currentLessonData.research}`,
+      null
     );
     
     currentLessonData.structure = result;
@@ -1851,18 +1824,8 @@ async function expandResearch() {
   
   try {
     const result = await claudeAI(
-      `Expanda o conteúdo teológico sobre "${currentLessonData.title}" em aproximadamente 20%, adicionando:
-- Argumentos bíblicos adicionais com referências específicas
-- Citações de teólogos reformados relevantes (Calvino, Bavinck, Berkhof, Sproul, Kuyper)
-- Contexto histórico-doutrinal que enriqueça a compreensão
-- Conexões com temas teológicos relacionados
-
-REGRA: Não repita informações já presentes — apenas enriqueça e aprofunde.
-
-CONTEÚDO ATUAL:
-${currentLessonData.research}
-
-Mantenha a estrutura e os títulos originais.`
+      `Expanda o conteúdo abaixo sobre "${currentLessonData.title}" em aproximadamente 20%, aprofundando cada seção com mais detalhes, exemplos, citações e referências bíblicas. Mantenha a estrutura original.\n\nCONTEÚDO:\n${currentLessonData.research}`,
+      null
     );
     
     currentLessonData.research = result;
