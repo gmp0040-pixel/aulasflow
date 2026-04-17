@@ -432,10 +432,11 @@ async function openSubject(subjectId, subjectName) {
   showPage('subject-detail', subjectName);
   
   document.getElementById('subject-detail-actions').innerHTML = `
+    <button class="btn btn-sm btn-ghost" onclick="showPage('subjects')">← Voltar</button>
     <button class="btn btn-sm btn-primary" onclick="openModal('add-lesson-modal')">+ Nova Aula</button>
+    <button class="btn btn-sm btn-ghost" style="background:rgba(99,102,241,0.1);color:var(--accent2)" onclick="openPptxModal()">📊 Importar PPTX</button>
     <button class="btn btn-sm btn-ghost" style="background:rgba(99,102,241,0.1);color:var(--accent2)" onclick="openExamModal('${subjectId}')">🧪 Criar Prova</button>
     <button class="btn btn-sm btn-ghost" style="background:rgba(168,85,247,0.1);color:var(--purple)" onclick="openAssignmentModal('${subjectId}')">📄 Criar Trabalho</button>
-    <button class="btn btn-sm btn-ghost" onclick="showPage('subjects')">← Voltar</button>
   `;
   
   switchSubjectTab('lessons');
@@ -482,6 +483,7 @@ async function loadLessonsTab(container) {
             <div class="lesson-meta">${formatDate(l.created_at)}</div>
             <div class="lesson-actions" onclick="event.stopPropagation()">
 <button class="btn btn-sm btn-primary" onclick="openLesson('${l.id}', '${escHtml(l.title)}', ${JSON.stringify(l).replace(/"/g, '&quot;')})">✏️ Editar</button>
+              ${l.slides ? `<button class="btn btn-sm btn-ghost" style="background:rgba(99,102,241,0.1);color:var(--accent2)" onclick="presentLesson('${l.id}', '${escHtml(l.title)}', ${JSON.stringify(l).replace(/"/g, '&quot;')})">📡 Apresentar</button>` : ''}
               <button class="btn btn-sm btn-danger btn-icon" onclick="deleteLesson('${l.id}')">🗑</button>
             </div>
           </div>
@@ -837,33 +839,35 @@ function renderLessonStep(step) {
   // STEP 1 — PESQUISA
   if (step === 1) {
     container.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <h3 style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:700">🔍 Pesquisa Completa</h3>
-        <button class="btn btn-sm btn-ghost" onclick="showPage('subject-detail')">✕ Cancelar e Voltar</button>
+        <button class="btn btn-sm btn-ghost" onclick="cancelLesson()">✕ Cancelar</button>
       </div>
-      <p style="color:var(--text2);font-size:14px;margin-bottom:16px">A IA pesquisa e gera conteúdo completo sobre o tema da aula.</p>
-      <div id="research-content" class="ai-content-area" style="display:${data.research ? 'block' : 'none'}">${markdownToHtml(data.research || '')}</div>
       <div id="research-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Pesquisando com IA...</span></div>
-      <div class="ai-action-bar" style="margin-top:16px">
-        <button class="btn btn-ghost" onclick="cancelLesson()">✕ Cancelar</button>
+      <textarea id="edit-research" class="form-textarea" style="width:100%;min-height:300px;font-size:13px;line-height:1.7;resize:vertical;margin-bottom:8px" placeholder="Cole ou digite a pesquisa aqui, ou use a IA para gerar automaticamente..." oninput="currentLessonData.research=this.value">${(data.research||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      <div class="ai-action-bar" style="margin-top:8px;flex-wrap:wrap">
+        <label class="btn btn-ghost" style="cursor:pointer" title="Importar arquivo de texto">📎 Importar<input type="file" accept=".txt,.md,.doc,.docx,.pdf" style="display:none" onchange="importFileToStep(this,'research')"></label>
         <button class="btn btn-primary" id="research-btn" onclick="aiResearch(false)">🤖 ${data.research ? 'Pesquisar Novamente' : 'Pesquisar com IA'}</button>
         ${data.research ? '<button class="btn btn-secondary" id="expand-btn" onclick="expandResearch()">📈 Expandir +20%</button>' : ''}
-        ${data.research ? '<button class="btn btn-success" onclick="saveStepAndAdvance(1)">💾 Salvar e Avançar →</button>' : ''}
+        <button class="btn btn-secondary" onclick="saveFieldAndContinue('research')">💾 Salvar Edição</button>
+        ${data.research ? '<button class="btn btn-success" onclick="saveStepAndAdvance(1)">Avançar →</button>' : ''}
       </div>`;
   
   // STEP 2 — ESTRUTURA
   } else if (step === 2) {
     container.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <h3 style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:700">📋 Estrutura da Aula</h3>
-        <button class="btn btn-sm btn-ghost" onclick="showPage('subject-detail')">✕ Cancelar e Voltar</button>
+        <button class="btn btn-sm btn-ghost" onclick="cancelLesson()">✕ Cancelar</button>
       </div>
-      <div id="structure-content" class="ai-content-area" style="display:${data.structure ? 'block' : 'none'}">${markdownToHtml(data.structure || '')}</div>
       <div id="structure-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Estruturando...</span></div>
-      <div class="ai-action-bar" style="margin-top:16px">
+      <textarea id="edit-structure" class="form-textarea" style="width:100%;min-height:300px;font-size:13px;line-height:1.7;resize:vertical;margin-bottom:8px" placeholder="Cole ou digite a estrutura aqui, ou use a IA para gerar automaticamente..." oninput="currentLessonData.structure=this.value">${(data.structure||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      <div class="ai-action-bar" style="margin-top:8px;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="renderLessonStep(1)">← Voltar</button>
+        <label class="btn btn-ghost" style="cursor:pointer" title="Importar arquivo">📎 Importar<input type="file" accept=".txt,.md,.doc,.docx,.pdf" style="display:none" onchange="importFileToStep(this,'structure')"></label>
         <button class="btn btn-primary" onclick="aiStructure()">🤖 ${data.structure ? 'Reestruturar' : 'Estruturar com IA'}</button>
-        ${data.structure ? '<button class="btn btn-success" onclick="saveStepAndAdvance(2)">💾 Salvar e Avançar →</button>' : ''}
+        <button class="btn btn-secondary" onclick="saveFieldAndContinue('structure')">💾 Salvar Edição</button>
+        ${data.structure ? '<button class="btn btn-success" onclick="saveStepAndAdvance(2)">Avançar →</button>' : ''}
       </div>`;
   
   // STEP 3 — SLIDES
@@ -883,32 +887,38 @@ function renderLessonStep(step) {
       } catch {}
     }
     container.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <h3 style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:700">🎞️ Slides da Aula</h3>
-        <button class="btn btn-sm btn-ghost" onclick="showPage('subject-detail')">✕ Cancelar e Voltar</button>
+        <button class="btn btn-sm btn-ghost" onclick="cancelLesson()">✕ Cancelar</button>
       </div>
       <div id="slides-preview">${slidesPreview}</div>
-      <div id="slides-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Criando slides completos...</span></div>
-      <div class="ai-action-bar" style="margin-top:16px">
+      <div id="slides-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Criando slides...</span></div>
+      ${data.slides ? `<details style="margin:8px 0"><summary style="cursor:pointer;font-size:12px;color:var(--text2);padding:6px 0">✏️ Editar JSON dos slides (avançado)</summary>
+        <textarea id="edit-slides" class="form-textarea" style="width:100%;min-height:180px;font-size:12px;font-family:monospace;resize:vertical;margin-top:8px" oninput="currentLessonData.slides=this.value">${(data.slides||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+        <button class="btn btn-sm btn-secondary" style="margin-top:4px" onclick="saveFieldAndContinue('slides')">💾 Salvar edição JSON</button>
+      </details>` : ''}
+      <div class="ai-action-bar" style="margin-top:8px;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="renderLessonStep(2)">← Voltar</button>
+        <label class="btn btn-ghost" style="cursor:pointer" title="Importar PPTX, PDF ou outro arquivo">📎 Importar Arquivo<input type="file" accept=".txt,.md,.pptx,.pdf,.doc,.docx" style="display:none" onchange="importSlidesFile(this)"></label>
         <button class="btn btn-primary" onclick="aiSlides()">🤖 ${data.slides ? 'Regerar Slides' : 'Criar Slides com IA'}</button>
-        ${data.slides ? '<button class="btn btn-success" onclick="saveStepAndAdvance(3)">💾 Salvar e Avançar →</button>' : ''}
+        ${data.slides ? '<button class="btn btn-success" onclick="saveStepAndAdvance(3)">Avançar →</button>' : ''}
       </div>`;
   
   // STEP 4 — ANOTAÇÕES
   } else if (step === 4) {
     container.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <h3 style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:700">🗒️ Anotações do Professor</h3>
-        <button class="btn btn-sm btn-ghost" onclick="showPage('subject-detail')">✕ Cancelar e Voltar</button>
+        <button class="btn btn-sm btn-ghost" onclick="cancelLesson()">✕ Cancelar</button>
       </div>
-      <p style="color:var(--text2);font-size:13px;margin-bottom:12px">Anotações sincronizadas com os slides — um tópico por ponto.</p>
-      <div id="notes-preview" class="ai-content-area" style="display:${data.notes ? 'block' : 'none'}">${markdownToHtml(data.notes || '')}</div>
-      <div id="notes-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Gerando anotações sincronizadas...</span></div>
-      <div class="ai-action-bar" style="margin-top:16px">
+      <div id="notes-loading" style="display:none" class="loading-pulse"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span>Gerando anotações...</span></div>
+      <textarea id="edit-notes" class="form-textarea" style="width:100%;min-height:300px;font-size:13px;line-height:1.7;resize:vertical;margin-bottom:8px" placeholder="Cole ou digite suas anotações aqui, ou use a IA para gerar automaticamente..." oninput="currentLessonData.notes=this.value">${(data.notes||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      <div class="ai-action-bar" style="margin-top:8px;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="renderLessonStep(3)">← Voltar</button>
+        <label class="btn btn-ghost" style="cursor:pointer" title="Importar arquivo">📎 Importar<input type="file" accept=".txt,.md,.doc,.docx,.pdf" style="display:none" onchange="importFileToStep(this,'notes')"></label>
         <button class="btn btn-primary" onclick="aiNotes('moderate')">🤖 ${data.notes ? 'Regerar' : 'Gerar Anotações'}</button>
-        ${data.notes ? '<button class="btn btn-success" onclick="saveStepAndAdvance(4)">💾 Salvar e Avançar →</button>' : ''}
+        <button class="btn btn-secondary" onclick="saveFieldAndContinue('notes')">💾 Salvar Edição</button>
+        ${data.notes ? '<button class="btn btn-success" onclick="saveStepAndAdvance(4)">Avançar →</button>' : ''}
       </div>`;
   
   // STEP 5 — SALVAR
@@ -1869,3 +1879,244 @@ function initTheme() {
 }
 // Init after DOM loads
 document.addEventListener('DOMContentLoaded', () => setTimeout(initTheme, 100));
+
+// ========================
+// IMPORTAR ARQUIVOS
+// ========================
+async function importFileToStep(input, field) {
+  const file = input.files[0];
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  
+  if (ext === 'pdf' || ext === 'docx' || ext === 'pptx') {
+    // Para PDF/DOCX/PPTX: envia para IA extrair e formatar
+    toast('Processando arquivo com IA...', 'info');
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const result = await claudeAI(
+          `O usuário importou um arquivo "${file.name}" para a etapa "${field}" de uma aula sobre "${currentLessonData.title}". 
+Extraia e organize o conteúdo textual deste arquivo de forma adequada para a etapa correspondente.
+Como não consigo ler o arquivo binário diretamente, instrua o usuário a copiar e colar o texto do arquivo na caixa de edição.
+Diga de forma amigável: "Por favor, abra seu arquivo ${file.name} e copie o texto para a caixa de edição abaixo."`,
+          null
+        );
+        toast('Para ' + ext.toUpperCase() + ': abra o arquivo e copie o texto para a caixa de edição.', 'info');
+      } catch(err) {}
+    };
+    reader.readAsText(file);
+    return;
+  }
+  
+  // Para TXT e MD: lê diretamente
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const text = e.target.result;
+    currentLessonData[field] = text;
+    const textarea = document.getElementById('edit-' + field);
+    if (textarea) textarea.value = text;
+    await saveLessonData();
+    toast('Arquivo importado com sucesso!', 'success');
+    renderLessonStep(field === 'research' ? 1 : field === 'structure' ? 2 : 4);
+  };
+  reader.readAsText(file);
+}
+
+async function importSlidesFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  
+  toast('Processando arquivo de slides...', 'info');
+  
+  if (ext === 'txt' || ext === 'md') {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target.result;
+      try {
+        const result = await claudeJSON(
+          `Converta este conteúdo em slides para apresentação. Organize em slides com título, pontos e notas do professor.
+          
+Conteúdo:
+${text}
+
+Retorne APENAS JSON válido:
+{"slides":[{"type":"intro","title":"","subtitle":"","points":["ponto 1","ponto 2"],"subpoints":{},"highlight":"","note":"nota do professor"}]}
+
+Tipos: intro, content, example, activity, summary, conclusion
+Crie entre 8 e 15 slides com 4-6 pontos cada.`,
+          null
+        );
+        currentLessonData.slides = JSON.stringify(result);
+        presentationSlides = result.slides || [];
+        await saveLessonData();
+        toast('Slides criados a partir do arquivo!', 'success');
+        renderLessonStep(3);
+      } catch(err) {
+        toast('Erro ao processar arquivo: ' + err.message, 'error');
+      }
+    };
+    reader.readAsText(file);
+  } else {
+    toast('Para PPTX/PDF: abra o arquivo, copie o texto e use a IA para converter em slides.', 'info');
+  }
+}
+
+async function saveFieldAndContinue(field) {
+  const textarea = document.getElementById('edit-' + field);
+  if (textarea) currentLessonData[field] = textarea.value;
+  await saveLessonData();
+  toast('✅ Salvo!', 'success');
+  renderLessonStep(field === 'research' ? 1 : field === 'structure' ? 2 : field === 'slides' ? 3 : 4);
+}
+
+
+// ========================
+// PPTX / APRESENTAÇÃO DIRETA
+// ========================
+let _pptxFile = null;
+
+function openPptxModal() {
+  _pptxFile = null;
+  document.getElementById('pptx-lesson-title').value = '';
+  document.getElementById('pptx-file-name').style.display = 'none';
+  document.getElementById('pptx-upload-status').style.display = 'none';
+  document.getElementById('pptx-file-input').value = '';
+  openModal('pptx-upload-modal');
+}
+
+function onPptxFileSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+  _pptxFile = file;
+  const nameEl = document.getElementById('pptx-file-name');
+  nameEl.textContent = '✅ ' + file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+  nameEl.style.display = 'block';
+}
+
+async function uploadPptxLesson() {
+  const title = document.getElementById('pptx-lesson-title').value.trim();
+  if (!title) return toast('Digite o título da aula', 'error');
+  if (!_pptxFile) return toast('Selecione um arquivo', 'error');
+
+  const btn = document.getElementById('pptx-upload-btn');
+  const status = document.getElementById('pptx-upload-status');
+  btn.disabled = true;
+  btn.textContent = '⏳ Processando...';
+  status.style.display = 'block';
+  status.textContent = 'Salvando aula...';
+
+  try {
+    const sb = getSupabase();
+
+    // Criar aula no banco
+    const { data: lesson, error } = await sb.from('lessons').insert({
+      title,
+      subject_id: currentSubjectId,
+      user_id: currentUser.id,
+      status: 'saved',
+      pptx_name: _pptxFile.name
+    }).select().single();
+    if (error) throw new Error(error.message);
+
+    // Converter arquivo para base64 e salvar como slides externos
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target.result;
+      // Salvar referência do arquivo no banco
+      await sb.from('lessons').update({
+        pptx_data: base64,
+        pptx_name: _pptxFile.name
+      }).eq('id', lesson.id);
+
+      closeModal('pptx-upload-modal');
+      toast('Apresentação importada! Clique em Apresentar para exibir.', 'success');
+      
+      // Abrir direto na apresentação PPTX
+      presentPptxLesson(lesson.id, title, _pptxFile.name, base64);
+      loadLessonsTab(document.getElementById('subject-tab-content'));
+    };
+    reader.readAsDataURL(_pptxFile);
+
+  } catch(err) {
+    toast('Erro: ' + err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '📤 Importar e Apresentar';
+  }
+}
+
+async function presentLesson(id, title, lessonData) {
+  const data = typeof lessonData === 'string' ? JSON.parse(lessonData) : lessonData;
+  // Se tem PPTX, apresenta o PPTX
+  if (data.pptx_data && data.pptx_name) {
+    presentPptxLesson(id, title, data.pptx_name, data.pptx_data);
+    return;
+  }
+  // Senão, apresenta slides normais
+  if (data.slides) {
+    currentLessonId = id;
+    currentLessonData = data;
+    try { presentationSlides = JSON.parse(data.slides).slides || []; } catch {}
+    if (presentationSlides.length > 0) { currentSlide = 0; startPresentationStudy(); }
+    else toast('Aula sem slides', 'error');
+  } else {
+    toast('Esta aula não tem slides para apresentar', 'error');
+  }
+}
+
+function presentPptxLesson(id, title, fileName, fileData) {
+  // Criar tela de apresentação do PPTX
+  let pScreen = document.getElementById('pptx-presentation-screen');
+  if (!pScreen) {
+    pScreen = document.createElement('div');
+    pScreen.id = 'pptx-presentation-screen';
+    pScreen.style.cssText = 'position:fixed;inset:0;background:#000;z-index:2000;display:flex;flex-direction:column;';
+    document.body.appendChild(pScreen);
+  }
+
+  const ext = fileName.split('.').pop().toLowerCase();
+  
+  if (ext === 'pdf') {
+    // PDF: renderizar com iframe
+    pScreen.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;background:#1a1a2e;color:white">
+        <span style="font-size:13px;font-weight:600">📊 ${escHtml(title)}</span>
+        <button onclick="document.getElementById('pptx-presentation-screen').remove();document.body.style.overflow=''" style="background:rgba(244,63,94,.2);border:1px solid rgba(244,63,94,.4);color:#f43f5e;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px">✕ Sair</button>
+      </div>
+      <iframe src="${fileData}" style="flex:1;border:none;width:100%"></iframe>
+    `;
+  } else if (ext === 'pptx' || ext === 'ppt' || ext === 'odp') {
+    // PPTX: oferecer download + link para Google Slides ou visualizador online
+    pScreen.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;background:#1a1a2e;color:white">
+        <span style="font-size:13px;font-weight:600">📊 ${escHtml(title)}</span>
+        <button onclick="document.getElementById('pptx-presentation-screen').remove();document.body.style.overflow=''" style="background:rgba(244,63,94,.2);border:1px solid rgba(244,63,94,.4);color:#f43f5e;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px">✕ Sair</button>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:40px;color:white;text-align:center">
+        <div style="font-size:64px">📊</div>
+        <div style="font-size:18px;font-weight:600">${escHtml(fileName)}</div>
+        <p style="color:#9ca3b8;max-width:400px;line-height:1.6">Arquivo PPTX importado com sucesso! Para apresentar, use uma das opções abaixo:</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+          <a href="${fileData}" download="${fileName}" style="background:#6366f1;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500">⬇️ Baixar e Abrir</a>
+          <button onclick="openInGoogleSlides('${fileData}', '${fileName}')" style="background:#10b981;color:white;padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:500">🌐 Abrir no Google Slides</button>
+        </div>
+        <p style="color:#636878;font-size:12px">Dica: Baixe o arquivo e abra no PowerPoint ou Google Slides para apresentar em fullscreen.</p>
+      </div>
+    `;
+  }
+
+  pScreen.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function openInGoogleSlides(fileData, fileName) {
+  // Criar blob e abrir upload no Google Slides
+  const link = document.createElement('a');
+  link.href = fileData;
+  link.download = fileName;
+  link.click();
+  setTimeout(() => {
+    window.open('https://slides.google.com', '_blank');
+  }, 1000);
+  toast('Arquivo baixado! Abra o Google Slides e importe o arquivo.', 'info');
+}
