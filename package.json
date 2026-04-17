@@ -1,16 +1,6 @@
 {
   "name": "aulasflow",
   "version": "1.0.0",
-  "description": "Sistema de geração de conteúdo pedagógico para seminário",
-  "main": "api/ai.js",
-  "scripts": {
-    "start": "node api/ai.js",
-    "dev": "vercel dev"
-  },
-  "dependencies": {
-    "node-fetch": "^2.7.0",
-    "express": "^4.17.1" 
-  },
   "engines": {
     "node": "24.x"
   }
