@@ -1,8 +1,0 @@
-{
-  "outputDirectory": "public",
-  "functions": {
-    "api/ai.js": {
-      "runtime": "nodejs20.x"
-    }
-  }
-}
